@@ -25,13 +25,13 @@ func Example() {
 
 	n := t.Get("romanus")
 
-	// Output: 2
 	fmt.Println(n.Val)
+	// Output: 2
 }
 
 func Example_named() {
 	t := patricia.New("Named Edge Example").
-		Add("foo@bar!@param", nil)
+		Add("foo@bar!@baz", nil)
 
 	err := t.Debug()
 
@@ -41,9 +41,9 @@ func Example_named() {
 
 	_, params := t.GetByRune("foo123!456", '@', '!')
 
+	fmt.Println(params["bar"])
+	fmt.Println(params["baz"])
 	// Output:
 	// 123
 	// 456
-	fmt.Println(params["bar"])
-	fmt.Println(params["param"])
 }
