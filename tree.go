@@ -25,7 +25,7 @@ func New(name string) *Tree {
 }
 
 // Add adds a new word to the tree.
-func (t *Tree) Add(s string, val interface{}) *Tree {
+func (t *Tree) Add(s string, v interface{}) *Tree {
 	found := 0
 	tnode := t.root
 	child := false
@@ -46,7 +46,7 @@ walk:
 					continue
 				}
 
-				next.node.Val = val
+				next.node.Value = v
 
 				break walk
 			}
@@ -56,7 +56,7 @@ walk:
 			tnode.edges = []*edge{
 				newEdge(next.label[len(s[found:]):], tnode.clone()),
 			}
-			tnode.Val = val
+			tnode.Value = v
 			next.label = next.label[:len(s[found:])]
 			t.size += 2
 
@@ -87,9 +87,9 @@ walk:
 					tnode.edges = []*edge{
 						// clone from parent
 						newEdge(next.label[cfound:], tnode.clone()),
-						newEdge(s[found+cfound:], tnode.child(val)),
+						newEdge(s[found+cfound:], tnode.child(v)),
 					}
-					tnode.Val = nil
+					tnode.Value = nil
 					next.label = next.label[:cfound]
 					t.size += 2
 
@@ -100,7 +100,7 @@ walk:
 			}
 		}
 
-		tnode.edges = append(tnode.edges, newEdge(s[found:], tnode.child(val)))
+		tnode.edges = append(tnode.edges, newEdge(s[found:], tnode.child(v)))
 		t.size++
 
 		break
@@ -171,9 +171,9 @@ func (t *Tree) Del(s string) *Tree {
 		parentNode.edges = append(parentNode.edges, tnode.edges...)
 		parentNode.edges = append(parentNode.edges[:edgeIndex], parentNode.edges[edgeIndex+1:]...)
 
-		if len(parentNode.edges) == 1 && parentNode.Val == nil && parent != nil {
+		if len(parentNode.edges) == 1 && parentNode.Value == nil && parent != nil {
 			parent.label += parentNode.edges[0].label
-			parentNode.Val = parentNode.edges[0].node.Val
+			parentNode.Value = parentNode.edges[0].node.Value
 			parentNode.edges = parentNode.edges[0].node.edges
 			t.size--
 		}
@@ -287,6 +287,7 @@ func (t *Tree) get(s string, ph, delim rune) (*Node, map[string]string) {
 		}
 
 		tnode = nil
+		params = nil
 	}
 
 	return tnode, params
