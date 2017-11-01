@@ -122,13 +122,6 @@ func (n *Node) next(s string, child bool, ph, delim rune) (*edge, map[string]str
 					return nil, nil
 				}
 
-				lfound += len(e.label[lfound : lfound+i])
-				ldelim := strings.IndexRune(e.label[lfound:], delim)
-
-				if ldelim < 0 {
-					ldelim = len(e.label[lfound:])
-				}
-
 				sfound += len(e.label[lfound : lfound+i])
 				sdelim := strings.IndexRune(s[sfound:], delim)
 
@@ -136,8 +129,15 @@ func (n *Node) next(s string, child bool, ph, delim rune) (*edge, map[string]str
 					sdelim = len(s[sfound:])
 				}
 
+				lfound += len(e.label[lfound : lfound+i])
+				ldelim := strings.IndexRune(e.label[lfound:], delim)
+
+				if ldelim < 0 {
+					ldelim = len(e.label[lfound:])
+				}
+
 				if params == nil {
-					params = make(map[string]string, 0)
+					params = make(map[string]string)
 				}
 
 				params[e.label[lfound+1:lfound+ldelim]] = s[sfound : sfound+sdelim]

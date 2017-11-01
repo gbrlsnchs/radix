@@ -12,7 +12,7 @@ import (
 func TestNew(t *testing.T) {
 	a := assert.New(t)
 	tests := []*struct {
-		sub            *Tree
+		tree           *Tree
 		str            string
 		ph             rune
 		delim          rune
@@ -23,20 +23,20 @@ func TestNew(t *testing.T) {
 	}{
 		// #0
 		{
-			sub:          New("#0"),
+			tree:         New("#0"),
 			str:          "test",
 			expectedSize: 1,
 		},
 		// #1
 		{
-			sub:          New("#1").Add("test", nil),
+			tree:         New("#1").Add("test", nil),
 			str:          "test",
 			expected:     true,
 			expectedSize: 2,
 		},
 		// #2
 		{
-			sub:          New("#2").Add("test", "foo"),
+			tree:         New("#2").Add("test", "foo"),
 			str:          "test",
 			expected:     true,
 			expectedSize: 2,
@@ -44,7 +44,7 @@ func TestNew(t *testing.T) {
 		},
 		// #3
 		{
-			sub:          New("#3").Add("test", "foo").Add("testing", "bar"),
+			tree:         New("#3").Add("test", "foo").Add("testing", "bar"),
 			str:          "test",
 			expected:     true,
 			expectedSize: 3,
@@ -52,7 +52,7 @@ func TestNew(t *testing.T) {
 		},
 		// #4
 		{
-			sub:          New("#3").Add("test", "foo").Add("testing", "bar"),
+			tree:         New("#3").Add("test", "foo").Add("testing", "bar"),
 			str:          "testing",
 			expected:     true,
 			expectedSize: 3,
@@ -60,7 +60,7 @@ func TestNew(t *testing.T) {
 		},
 		// #5
 		{
-			sub:            New("#5").Add("test:@param", nil),
+			tree:           New("#5").Add("test:@param", nil),
 			str:            "test:foo",
 			ph:             '@',
 			expected:       true,
@@ -69,7 +69,7 @@ func TestNew(t *testing.T) {
 		},
 		// #6
 		{
-			sub:            New("#6").Add("test:@param", "foobar"),
+			tree:           New("#6").Add("test:@param", "foobar"),
 			str:            "test:foo",
 			ph:             '@',
 			expected:       true,
@@ -79,7 +79,7 @@ func TestNew(t *testing.T) {
 		},
 		// #7
 		{
-			sub:            New("#7").Add("test:@param1:@param2", "foobar"),
+			tree:           New("#7").Add("test:@param1:@param2", "foobar"),
 			str:            "test:foo:bar",
 			ph:             '@',
 			delim:          ':',
@@ -90,7 +90,7 @@ func TestNew(t *testing.T) {
 		},
 		// #8
 		{
-			sub:            New("#8").Add("test:@param1", "foo").Add("test:@param1:@param2", "bar"),
+			tree:           New("#8").Add("test:@param1", "foo").Add("test:@param1:@param2", "bar"),
 			str:            "test:foo:bar",
 			ph:             '@',
 			delim:          ':',
@@ -101,7 +101,7 @@ func TestNew(t *testing.T) {
 		},
 		// #9
 		{
-			sub: New("#9").
+			tree: New("#9").
 				Add("test", nil).
 				Add("test:@param1", "foo").
 				Add("test:@param1:@param2", "bar").
@@ -116,7 +116,7 @@ func TestNew(t *testing.T) {
 		},
 		// #10
 		{
-			sub: New("#10").
+			tree: New("#10").
 				Add("test", nil).
 				Add("test:@param1", "foo").
 				Add("test:@param1:@param2", "bar").
@@ -132,7 +132,7 @@ func TestNew(t *testing.T) {
 		},
 		// #11
 		{
-			sub: New("#11").
+			tree: New("#11").
 				Add("test", "foo").
 				Add("test:@param1", "bar").
 				Add("test:@param1:@param2", "baz").
@@ -146,34 +146,47 @@ func TestNew(t *testing.T) {
 			expectedVal:    "qux",
 			expectedParams: map[string]string{"param2": "foo", "param3": "bar"},
 		},
+		// #12
+		{
+			tree:           New("#12").Add("/foo/:bar", "baz"),
+			str:            "/foo/123",
+			ph:             ':',
+			delim:          '/',
+			expected:       true,
+			expectedSize:   2,
+			expectedVal:    "baz",
+			expectedParams: map[string]string{"bar": "123"},
+		},
 	}
 
 	for i, test := range tests {
 		index := strconv.Itoa(i)
-		err := test.sub.Debug()
+		err := test.tree.Debug()
 
 		a.Nil(err, index)
-		a.Exactly(test.expectedSize, test.sub.Size(), index)
+		a.Exactly(test.expectedSize, test.tree.Size(), index)
 
 		if test.ph == 0 {
-			n := test.sub.Get(test.str)
+			n := test.tree.Get(test.str)
 
 			a.Exactly(test.expected, n != nil, index)
 
 			if n != nil {
 				a.Exactly(test.expectedVal, n.Val, index)
+				t.Logf("n.Val = %#v\n", n.Val)
 			}
 
 			continue
 		}
 
-		n, params := test.sub.GetByRune(test.str, test.ph, test.delim)
+		n, params := test.tree.GetByRune(test.str, test.ph, test.delim)
 
 		a.Exactly(test.expected, n != nil, index)
 		a.Exactly(test.expectedParams, params, index)
 
 		if n != nil {
 			a.Exactly(test.expectedVal, n.Val, index)
+			t.Logf("n.Val = %#v\n", n.Val)
 		}
 	}
 }
