@@ -266,7 +266,7 @@ func (t *Tree) get(s string, ph, delim rune) (*Node, map[string]string) {
 
 		if p != nil {
 			if params == nil {
-				params = make(map[string]string, 0)
+				params = make(map[string]string)
 			}
 
 			count := 0
