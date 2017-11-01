@@ -8,8 +8,8 @@ import (
 
 // Node is a node of a PATRICIA tree.
 type Node struct {
-	// Val is a value of any type held by a node.
-	Val      interface{}
+	// Value is a value of any type held by a node.
+	Value    interface{}
 	edges    []*edge
 	priority int
 	depth    int
@@ -73,7 +73,7 @@ func (n *Node) buffer(debug bool) (*bytes.Buffer, error) {
 // child returns a child of the node.
 func (n *Node) child(val interface{}) *Node {
 	c := &Node{
-		Val:   val,
+		Value: val,
 		depth: n.depth,
 	}
 
@@ -83,7 +83,7 @@ func (n *Node) child(val interface{}) *Node {
 // clone returns a clone of the node.
 func (n *Node) clone() *Node {
 	c := &Node{
-		Val:   n.Val,
+		Value: n.Value,
 		edges: n.edges,
 		depth: n.depth,
 	}
@@ -97,7 +97,7 @@ func (n *Node) count(depth int) int {
 	n.priority = 0
 	n.depth = depth
 
-	if n.Val != nil {
+	if n.Value != nil {
 		n.priority++
 	}
 
