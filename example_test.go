@@ -25,7 +25,7 @@ func Example() {
 
 	n := t.Get("romanus")
 
-	fmt.Println(n.Val)
+	fmt.Println(n.Value)
 	// Output: 2
 }
 
