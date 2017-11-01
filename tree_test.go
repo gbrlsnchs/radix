@@ -18,7 +18,7 @@ func TestNew(t *testing.T) {
 		delim          rune
 		expected       bool
 		expectedSize   uint
-		expectedVal    interface{}
+		expectedValue  interface{}
 		expectedParams map[string]string
 	}{
 		// #0
@@ -36,27 +36,27 @@ func TestNew(t *testing.T) {
 		},
 		// #2
 		{
-			tree:         New("#2").Add("test", "foo"),
-			str:          "test",
-			expected:     true,
-			expectedSize: 2,
-			expectedVal:  "foo",
+			tree:          New("#2").Add("test", "foo"),
+			str:           "test",
+			expected:      true,
+			expectedSize:  2,
+			expectedValue: "foo",
 		},
 		// #3
 		{
-			tree:         New("#3").Add("test", "foo").Add("testing", "bar"),
-			str:          "test",
-			expected:     true,
-			expectedSize: 3,
-			expectedVal:  "foo",
+			tree:          New("#3").Add("test", "foo").Add("testing", "bar"),
+			str:           "test",
+			expected:      true,
+			expectedSize:  3,
+			expectedValue: "foo",
 		},
 		// #4
 		{
-			tree:         New("#3").Add("test", "foo").Add("testing", "bar"),
-			str:          "testing",
-			expected:     true,
-			expectedSize: 3,
-			expectedVal:  "bar",
+			tree:          New("#3").Add("test", "foo").Add("testing", "bar"),
+			str:           "testing",
+			expected:      true,
+			expectedSize:  3,
+			expectedValue: "bar",
 		},
 		// #5
 		{
@@ -74,7 +74,7 @@ func TestNew(t *testing.T) {
 			ph:             '@',
 			expected:       true,
 			expectedSize:   2,
-			expectedVal:    "foobar",
+			expectedValue:  "foobar",
 			expectedParams: map[string]string{"param": "foo"},
 		},
 		// #7
@@ -85,7 +85,7 @@ func TestNew(t *testing.T) {
 			delim:          ':',
 			expected:       true,
 			expectedSize:   2,
-			expectedVal:    "foobar",
+			expectedValue:  "foobar",
 			expectedParams: map[string]string{"param1": "foo", "param2": "bar"},
 		},
 		// #8
@@ -96,7 +96,7 @@ func TestNew(t *testing.T) {
 			delim:          ':',
 			expected:       true,
 			expectedSize:   3,
-			expectedVal:    "bar",
+			expectedValue:  "bar",
 			expectedParams: map[string]string{"param1": "foo", "param2": "bar"},
 		},
 		// #9
@@ -111,7 +111,7 @@ func TestNew(t *testing.T) {
 			delim:          ':',
 			expected:       true,
 			expectedSize:   5,
-			expectedVal:    "baz",
+			expectedValue:  "baz",
 			expectedParams: map[string]string{"param1": "foo", "param2": "bar", "param3": "baz"},
 		},
 		// #10
@@ -127,7 +127,7 @@ func TestNew(t *testing.T) {
 			delim:          ':',
 			expected:       true,
 			expectedSize:   3,
-			expectedVal:    "baz",
+			expectedValue:  "baz",
 			expectedParams: map[string]string{"param2": "foo", "param3": "bar"},
 		},
 		// #11
@@ -143,7 +143,7 @@ func TestNew(t *testing.T) {
 			delim:          ':',
 			expected:       true,
 			expectedSize:   4,
-			expectedVal:    "qux",
+			expectedValue:  "qux",
 			expectedParams: map[string]string{"param2": "foo", "param3": "bar"},
 		},
 		// #12
@@ -154,8 +154,48 @@ func TestNew(t *testing.T) {
 			delim:          '/',
 			expected:       true,
 			expectedSize:   2,
-			expectedVal:    "baz",
+			expectedValue:  "baz",
 			expectedParams: map[string]string{"bar": "123"},
+		},
+		// #13
+		{
+			tree:         New("#13").Add("/foo/:bar", "baz"),
+			str:          "/foo/123/456",
+			ph:           ':',
+			delim:        '/',
+			expected:     false,
+			expectedSize: 2,
+		},
+		// #14
+		{
+			tree:           New("#14").Add("$foo|$bar", "baz"),
+			str:            "abc|def",
+			ph:             '$',
+			delim:          '|',
+			expected:       true,
+			expectedSize:   2,
+			expectedValue:  "baz",
+			expectedParams: map[string]string{"foo": "abc", "bar": "def"},
+		},
+		// #15
+		{
+			tree:           New("#15").Add("$foo", "bar").Add("$foo|$baz", "qux"),
+			str:            "abc|def",
+			ph:             '$',
+			delim:          '|',
+			expected:       true,
+			expectedSize:   3,
+			expectedValue:  "qux",
+			expectedParams: map[string]string{"foo": "abc", "baz": "def"},
+		},
+		// #16
+		{
+			tree:         New("#16").Add("/foo/:bar/baz", "qux"),
+			str:          "/foo/123/qux",
+			ph:           ':',
+			delim:        '/',
+			expected:     false,
+			expectedSize: 2,
 		},
 	}
 
@@ -172,8 +212,8 @@ func TestNew(t *testing.T) {
 			a.Exactly(test.expected, n != nil, index)
 
 			if n != nil {
-				a.Exactly(test.expectedVal, n.Val, index)
-				t.Logf("n.Val = %#v\n", n.Val)
+				a.Exactly(test.expectedValue, n.Value, index)
+				t.Logf("n.Value = %#v\n", n.Value)
 			}
 
 			continue
@@ -185,8 +225,8 @@ func TestNew(t *testing.T) {
 		a.Exactly(test.expectedParams, params, index)
 
 		if n != nil {
-			a.Exactly(test.expectedVal, n.Val, index)
-			t.Logf("n.Val = %#v\n", n.Val)
+			a.Exactly(test.expectedValue, n.Value, index)
+			t.Logf("n.Value = %#v\n", n.Value)
 		}
 	}
 }

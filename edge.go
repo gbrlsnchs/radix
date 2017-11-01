@@ -72,7 +72,7 @@ func (e *edge) buffer(debug bool, tabList []bool) (*bytes.Buffer, error) {
 	}
 
 	if debug {
-		_, err = buf.WriteString(magenta(" -> %#v", e.node.Val))
+		_, err = buf.WriteString(magenta(" -> %#v", e.node.Value))
 
 		if err != nil {
 			return nil, err
