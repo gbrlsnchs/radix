@@ -257,37 +257,100 @@ func (t *Tree) String(debug bool) (string, error) {
 
 // get retrieves a node dynamically or not.
 func (t *Tree) get(s string, ph, delim rune) (*Node, map[string]string) {
-	found := 0
+	sfound := 0
 	tnode := t.root
 	var params map[string]string
 
-	for tnode != nil && found < len(s) {
-		next, p := tnode.next(s[found:], false, ph, delim)
+	for tnode != nil && sfound < len(s) {
+		var next *edge
 
-		if p != nil {
-			if params == nil {
-				params = make(map[string]string)
-			}
+		for _, e := range tnode.edges {
+			lfound := 0
 
-			count := 0
+			for lfound < len(e.label) {
+				// Checks for a placeholder.
+				i := strings.IndexRune(e.label[lfound:], ph)
 
-			for k, v := range p {
-				found += len(v) - len(k) - 1
+				// If not placeholder is found,
+				// then the limit is the end of the word.
+				// Also, if the placeholder equals the delimiter,
+				// disregard the label as a named parameter.
+				if i < 0 || ph == delim {
+					i = len(e.label[lfound:])
+				}
 
+				// Checks for a match of the label before the placeholder
+				// in the remaining string.
+				j := strings.Index(s[sfound:], e.label[lfound:lfound+i])
+
+				// If the label before the placeholder is not a prefix
+				// of the string, then the lookup fails.
+				if j < 0 {
+					break
+				}
+
+				// Sums the length of the label slice before the placeholder
+				// to the "found" counter of both the label and the string.
+				llen := len(e.label[lfound : lfound+i])
+				sfound += llen
+				lfound += llen
+
+				// If there's no placeholder ahead,
+				// move to the next edge traverse.
+				if i == len(e.label) {
+					next = e
+
+					break
+				}
+
+				// Finds where the named parameter's key and value end.
+				ldelim := strings.IndexRune(e.label[lfound:], delim)
+				sdelim := strings.IndexRune(s[sfound:], delim)
+
+				// If there's no delimiter, then it ends when
+				// the label and the string themselves end.
+				if ldelim < 0 {
+					ldelim = len(e.label[lfound:])
+				}
+
+				if sdelim < 0 {
+					sdelim = len(s[sfound:])
+				}
+
+				k := e.label[lfound+1 : lfound+ldelim]
+				v := s[sfound : sfound+sdelim]
+
+				if params == nil {
+					params = make(map[string]string)
+				}
+
+				// Adds the named parameter to the "params" map and
+				// sums the label's named parameter's length to "lfound" and
+				// the parameter's value's length to "sfound".
 				params[k] = v
-				count++
+				lfound += len(k) + 1
+				sfound += len(v)
 			}
+
+			if lfound != len(e.label) {
+				continue
+			}
+
+			next = e
 		}
 
 		if next != nil {
 			tnode = next.node
-			found += len(next.label)
 
 			continue
 		}
 
 		tnode = nil
 		params = nil
+	}
+
+	if sfound < len(s) {
+		return nil, nil
 	}
 
 	return tnode, params
