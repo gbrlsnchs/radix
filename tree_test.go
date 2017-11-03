@@ -197,6 +197,16 @@ func TestNew(t *testing.T) {
 			expected:     false,
 			expectedSize: 2,
 		},
+		// #17
+		{
+			tree:           New("#17").Add("/foo/:bar/:baz", nil),
+			str:            "/foo/123/456",
+			ph:             ':',
+			delim:          '/',
+			expected:       true,
+			expectedSize:   2,
+			expectedParams: map[string]string{"bar": "123", "baz": "456"},
+		},
 	}
 
 	for i, test := range tests {
