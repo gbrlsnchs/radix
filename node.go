@@ -3,7 +3,6 @@ package patricia
 import (
 	"bytes"
 	"sort"
-	"strings"
 )
 
 // Node is a node of a PATRICIA tree.
@@ -71,10 +70,10 @@ func (n *Node) buffer(debug bool) (*bytes.Buffer, error) {
 }
 
 // child returns a child of the node.
-func (n *Node) child(val interface{}) *Node {
+func (n *Node) child(v interface{}) *Node {
 	c := &Node{
-		Value: val,
-		depth: n.depth,
+		Value: v,
+		depth: n.depth + 1,
 	}
 
 	return c
@@ -83,90 +82,27 @@ func (n *Node) child(val interface{}) *Node {
 // clone returns a clone of the node.
 func (n *Node) clone() *Node {
 	c := &Node{
-		Value: n.Value,
-		edges: n.edges,
-		depth: n.depth,
+		Value:    n.Value,
+		edges:    n.edges,
+		depth:    n.depth + 1,
+		priority: n.priority - 1,
 	}
+
+	if c.Value != nil {
+		c.priority++
+	}
+
+	c.incrDepth()
 
 	return c
 }
 
-// count counts both the node's and its children's
-// depth and priority recursively.
-func (n *Node) count(depth int) int {
-	n.priority = 0
-	n.depth = depth
-
-	if n.Value != nil {
-		n.priority++
-	}
-
+func (n *Node) incrDepth() {
 	for _, e := range n.edges {
-		n.priority += e.node.count(n.depth + 1)
+		e.node.depth++
+
+		e.node.incrDepth()
 	}
-
-	return n.priority
-}
-
-// next returns the next edge to be traversed and, if there's a placeholder,
-// may also return a map of named parameters.
-func (n *Node) next(s string, child bool, ph, delim rune) (*edge, map[string]string) {
-	for _, e := range n.edges {
-		if i := strings.IndexRune(e.label, ph); i >= 0 && ph != delim {
-			var params map[string]string
-			lfound := 0
-			sfound := 0
-
-			for i >= 0 {
-				if !strings.HasPrefix(s[sfound:], e.label[lfound:lfound+i]) {
-					return nil, nil
-				}
-
-				sfound += len(e.label[lfound : lfound+i])
-				sdelim := strings.IndexRune(s[sfound:], delim)
-
-				if sdelim < 0 {
-					sdelim = len(s[sfound:])
-				}
-
-				lfound += len(e.label[lfound : lfound+i])
-				ldelim := strings.IndexRune(e.label[lfound:], delim)
-
-				if ldelim < 0 {
-					ldelim = len(e.label[lfound:])
-				}
-
-				if params == nil {
-					params = make(map[string]string)
-				}
-
-				params[e.label[lfound+1:lfound+ldelim]] = s[sfound : sfound+sdelim]
-				lfound += len(e.label[lfound : lfound+ldelim])
-				sfound += len(s[sfound : sfound+sdelim])
-				i = strings.IndexRune(e.label[lfound:], ph)
-			}
-
-			if e.label[lfound:] != s[sfound:] &&
-				strings.IndexRune(e.label[lfound:], ph) != 0 &&
-				len(e.label[lfound:]) > 0 {
-				return nil, nil
-			}
-
-			return e, params
-		}
-
-		hasPrefix := strings.HasPrefix(s, e.label)
-
-		if child {
-			hasPrefix = strings.HasPrefix(e.label, s)
-		}
-
-		if hasPrefix {
-			return e, nil
-		}
-	}
-
-	return nil, nil
 }
 
 // sort sorts the node and its children recursively.
