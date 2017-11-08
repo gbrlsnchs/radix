@@ -17,6 +17,8 @@ func Example() {
 		WithNode("rubicon", 6).
 		WithNode("rubicundus", 7)
 
+	t.Sort()
+
 	err := t.Debug()
 
 	if err != nil {
