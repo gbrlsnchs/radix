@@ -24,92 +24,102 @@ func New(name string) *Tree {
 	return &Tree{name: name, root: &Node{}}
 }
 
-// Add adds a new word to the tree.
-func (t *Tree) Add(s string, v interface{}) *Tree {
-	found := 0
+// Add adds a new node to the tree.
+func (t *Tree) Add(s string, v interface{}) {
+	sfound := 0
+	cfound := 0
 	tnode := t.root
-	child := false
-	s = strings.ToLower(s)
 
 walk:
 	for {
-		next, _ := tnode.next(s[found:], child, 0, 0)
+		var next *edge
 
-		if next != nil {
-			tnode = next.node
-
-			// keep looking
-			if !child {
-				found += len(next.label)
-
-				if len(s[found:]) > 0 {
-					continue
-				}
-
-				next.node.Value = v
-
-				break walk
-			}
-
-			// in this case, tnode will become a child of a new node with the prefix
-			// so deep copy it and clean afterwards
-			tnode.edges = []*edge{
-				newEdge(next.label[len(s[found:]):], tnode.clone()),
-			}
-			tnode.Value = v
-			next.label = next.label[:len(s[found:])]
-			t.size += 2
-
-			break
-		}
-
-		if !child {
-			child = true
-
-			continue
-		}
-
-		// if there are remaining elements,
-		// add a new node
 		for _, e := range tnode.edges {
-			cfound := 0
+			cfound = 0
+			str := s[sfound:]
 
-			for _, c := range e.label {
-				if c == rune(s[found:][cfound]) {
+			for i := range e.label {
+				if e.label[i] == str[cfound] {
 					cfound++
 
 					continue
 				}
 
-				if cfound > 0 {
-					next = e
-					tnode = next.node
-					tnode.edges = []*edge{
-						// clone from parent
-						newEdge(next.label[cfound:], tnode.clone()),
-						newEdge(s[found+cfound:], tnode.child(v)),
-					}
-					tnode.Value = nil
-					next.label = next.label[:cfound]
-					t.size += 2
+				break
+			}
 
-					break walk
-				}
+			if cfound > 0 {
+				sfound += cfound
+				next = e
 
 				break
 			}
 		}
 
-		tnode.edges = append(tnode.edges, newEdge(s[found:], tnode.child(v)))
+		if next != nil {
+			tnode = next.node
+
+			if v != nil {
+				tnode.priority++
+			}
+
+			// The string "s" is a splitter or, in other words,
+			// it shares a common prefix with an edge and thus
+			// splits the edge label into the prefix (parent) and
+			// two children, one being the remaning string per se and
+			// the other being the part that doesn't match the string.
+			if cfound > 0 && cfound < len(next.label) {
+				tnode.edges = []*edge{
+					newEdge(next.label[cfound:], tnode.clone()),
+					newEdge(s[sfound:], tnode.child(v)),
+				}
+
+				for _, e := range tnode.edges {
+					if e.node.Value != nil {
+						e.node.priority = 1
+					}
+				}
+
+				tnode.Value = nil
+				next.label = next.label[:cfound]
+				t.size += 2
+
+				break walk
+			}
+
+			// The conditions below only happen if
+			// the whole string has been matched.
+			if sfound == len(s) {
+				// When the string already exists inside the tree and
+				// there's nothing more to add to the latter,
+				// only the value is substituted.
+				if cfound == len(next.label) {
+					tnode.Value = v
+
+					break walk
+				}
+
+				// When the string is a prefix of the edge's label,
+				// it splits the latter into the prefix and a new child,
+				// the remaining label without the prefix.
+				tnode.edges = []*edge{
+					newEdge(next.label[len(s[sfound:]):], tnode.clone()),
+				}
+				tnode.Value = v
+				next.label = next.label[:len(s[sfound:])]
+				t.size += 2
+
+				break walk
+			}
+
+			continue
+		}
+
+		// When the string has not been fully matched,
+		// it appends a new child to the last node traversed.
+		tnode.edges = append(tnode.edges, newEdge(s[sfound:], tnode.child(v)))
 		t.size++
-
-		break
 	}
-
-	_ = t.root.count(0)
-	t.root.sort()
-
-	return t
 }
 
 // Debug prints the tree's structure plus its metadata.
@@ -129,14 +139,23 @@ func (t *Tree) Debug() error {
 //
 // If a parent node that holds no value ends up holding only one edge
 // after a deletion of one of its edges, it gets merged with the remaining edge.
-func (t *Tree) Del(s string) *Tree {
+func (t *Tree) Del(s string) {
 	found := 0
 	tnode := t.root
 	edgeIndex := 0
 	var parent *edge
+	var priorityPointers []*int
 
 	for tnode != nil && found < len(s) {
-		next, _ := tnode.next(s[found:], false, 0, 0)
+		var next *edge
+
+		for _, e := range tnode.edges {
+			if strings.HasPrefix(s[found:], e.label) {
+				next = e
+
+				break
+			}
+		}
 
 		if next != nil {
 			for i, e := range tnode.edges {
@@ -149,6 +168,7 @@ func (t *Tree) Del(s string) *Tree {
 
 			tnode = next.node
 			found += len(next.label)
+			priorityPointers = append(priorityPointers, &tnode.priority)
 
 			if found < len(s) {
 				parent = next
@@ -168,6 +188,12 @@ func (t *Tree) Del(s string) *Tree {
 			parentNode = parent.node
 		}
 
+		if tnode.Value != nil {
+			for _, p := range priorityPointers {
+				*p--
+			}
+		}
+
 		parentNode.edges = append(parentNode.edges, tnode.edges...)
 		parentNode.edges = append(parentNode.edges[:edgeIndex], parentNode.edges[edgeIndex+1:]...)
 
@@ -177,13 +203,9 @@ func (t *Tree) Del(s string) *Tree {
 			parentNode.edges = parentNode.edges[0].node.edges
 			t.size--
 		}
+
+		t.size--
 	}
-
-	_ = t.root.count(0)
-	t.root.sort()
-	t.size--
-
-	return t
 }
 
 // Get retrieves a node.
@@ -216,6 +238,12 @@ func (t *Tree) Print() error {
 // including the root.
 func (t *Tree) Size() uint {
 	return t.size + 1
+}
+
+// Sort sorts the tree nodes and its children recursively
+// according to their priority counter.
+func (t *Tree) Sort() {
+	t.root.sort()
 }
 
 // String returns a string representation of the tree structure.
@@ -253,6 +281,20 @@ func (t *Tree) String(debug bool) (string, error) {
 	}
 
 	return buf.String(), nil
+}
+
+// WithNode returns a tree with a new node inserted.
+func (t *Tree) WithNode(s string, v interface{}) *Tree {
+	t.Add(s, v)
+
+	return t
+}
+
+// WithoutNode returns a tree without a specific node.
+func (t *Tree) WithoutNode(s string) *Tree {
+	t.Del(s)
+
+	return t
 }
 
 // get retrieves a node dynamically or not.
