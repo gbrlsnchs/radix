@@ -9,13 +9,13 @@ import (
 func Example() {
 	// Example from https://upload.wikimedia.org/wikipedia/commons/a/ae/Patricia_trie.svg.
 	t := patricia.New("Example").
-		Add("romane", 1).
-		Add("romanus", 2).
-		Add("romulus", 3).
-		Add("rubens", 4).
-		Add("ruber", 5).
-		Add("rubicon", 6).
-		Add("rubicundus", 7)
+		WithNode("romane", 1).
+		WithNode("romanus", 2).
+		WithNode("romulus", 3).
+		WithNode("rubens", 4).
+		WithNode("ruber", 5).
+		WithNode("rubicon", 6).
+		WithNode("rubicundus", 7)
 
 	err := t.Debug()
 
@@ -31,7 +31,7 @@ func Example() {
 
 func Example_named() {
 	t := patricia.New("Named Edge Example").
-		Add("foo@bar!@baz", nil)
+		WithNode("foo@bar!@baz", nil)
 
 	err := t.Debug()
 

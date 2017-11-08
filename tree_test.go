@@ -29,14 +29,14 @@ func TestNew(t *testing.T) {
 		},
 		// #1
 		{
-			tree:         New("#1").Add("test", nil),
+			tree:         New("#1").WithNode("test", nil),
 			str:          "test",
 			expected:     true,
 			expectedSize: 2,
 		},
 		// #2
 		{
-			tree:          New("#2").Add("test", "foo"),
+			tree:          New("#2").WithNode("test", "foo"),
 			str:           "test",
 			expected:      true,
 			expectedSize:  2,
@@ -44,7 +44,7 @@ func TestNew(t *testing.T) {
 		},
 		// #3
 		{
-			tree:          New("#3").Add("test", "foo").Add("testing", "bar"),
+			tree:          New("#3").WithNode("test", "foo").WithNode("testing", "bar"),
 			str:           "test",
 			expected:      true,
 			expectedSize:  3,
@@ -52,7 +52,7 @@ func TestNew(t *testing.T) {
 		},
 		// #4
 		{
-			tree:          New("#3").Add("test", "foo").Add("testing", "bar"),
+			tree:          New("#3").WithNode("test", "foo").WithNode("testing", "bar"),
 			str:           "testing",
 			expected:      true,
 			expectedSize:  3,
@@ -60,7 +60,7 @@ func TestNew(t *testing.T) {
 		},
 		// #5
 		{
-			tree:           New("#5").Add("test:@param", nil),
+			tree:           New("#5").WithNode("test:@param", nil),
 			str:            "test:foo",
 			ph:             '@',
 			expected:       true,
@@ -69,7 +69,7 @@ func TestNew(t *testing.T) {
 		},
 		// #6
 		{
-			tree:           New("#6").Add("test:@param", "foobar"),
+			tree:           New("#6").WithNode("test:@param", "foobar"),
 			str:            "test:foo",
 			ph:             '@',
 			expected:       true,
@@ -79,7 +79,7 @@ func TestNew(t *testing.T) {
 		},
 		// #7
 		{
-			tree:           New("#7").Add("test:@param1:@param2", "foobar"),
+			tree:           New("#7").WithNode("test:@param1:@param2", "foobar"),
 			str:            "test:foo:bar",
 			ph:             '@',
 			delim:          ':',
@@ -90,7 +90,7 @@ func TestNew(t *testing.T) {
 		},
 		// #8
 		{
-			tree:           New("#8").Add("test:@param1", "foo").Add("test:@param1:@param2", "bar"),
+			tree:           New("#8").WithNode("test:@param1", "foo").WithNode("test:@param1:@param2", "bar"),
 			str:            "test:foo:bar",
 			ph:             '@',
 			delim:          ':',
@@ -102,10 +102,10 @@ func TestNew(t *testing.T) {
 		// #9
 		{
 			tree: New("#9").
-				Add("test", nil).
-				Add("test:@param1", "foo").
-				Add("test:@param1:@param2", "bar").
-				Add("test:@param1:@param2:@param3", "baz"),
+				WithNode("test", nil).
+				WithNode("test:@param1", "foo").
+				WithNode("test:@param1:@param2", "bar").
+				WithNode("test:@param1:@param2:@param3", "baz"),
 			str:            "test:foo:bar:baz",
 			ph:             '@',
 			delim:          ':',
@@ -117,11 +117,11 @@ func TestNew(t *testing.T) {
 		// #10
 		{
 			tree: New("#10").
-				Add("test", nil).
-				Add("test:@param1", "foo").
-				Add("test:@param1:@param2", "bar").
-				Add("test:@param1:@param2:@param3", "baz").
-				Del("test:@param1"),
+				WithNode("test", nil).
+				WithNode("test:@param1", "foo").
+				WithNode("test:@param1:@param2", "bar").
+				WithNode("test:@param1:@param2:@param3", "baz").
+				WithoutNode("test:@param1"),
 			str:            "test:foo:bar",
 			ph:             '@',
 			delim:          ':',
@@ -133,11 +133,11 @@ func TestNew(t *testing.T) {
 		// #11
 		{
 			tree: New("#11").
-				Add("test", "foo").
-				Add("test:@param1", "bar").
-				Add("test:@param1:@param2", "baz").
-				Add("test:@param1:@param2:@param3", "qux").
-				Del("test:@param1"),
+				WithNode("test", "foo").
+				WithNode("test:@param1", "bar").
+				WithNode("test:@param1:@param2", "baz").
+				WithNode("test:@param1:@param2:@param3", "qux").
+				WithoutNode("test:@param1"),
 			str:            "test:foo:bar",
 			ph:             '@',
 			delim:          ':',
@@ -148,7 +148,7 @@ func TestNew(t *testing.T) {
 		},
 		// #12
 		{
-			tree:           New("#12").Add("/foo/:bar", "baz"),
+			tree:           New("#12").WithNode("/foo/:bar", "baz"),
 			str:            "/foo/123",
 			ph:             ':',
 			delim:          '/',
@@ -159,7 +159,7 @@ func TestNew(t *testing.T) {
 		},
 		// #13
 		{
-			tree:         New("#13").Add("/foo/:bar", "baz"),
+			tree:         New("#13").WithNode("/foo/:bar", "baz"),
 			str:          "/foo/123/456",
 			ph:           ':',
 			delim:        '/',
@@ -168,7 +168,7 @@ func TestNew(t *testing.T) {
 		},
 		// #14
 		{
-			tree:           New("#14").Add("$foo|$bar", "baz"),
+			tree:           New("#14").WithNode("$foo|$bar", "baz"),
 			str:            "abc|def",
 			ph:             '$',
 			delim:          '|',
@@ -179,7 +179,7 @@ func TestNew(t *testing.T) {
 		},
 		// #15
 		{
-			tree:           New("#15").Add("$foo", "bar").Add("$foo|$baz", "qux"),
+			tree:           New("#15").WithNode("$foo", "bar").WithNode("$foo|$baz", "qux"),
 			str:            "abc|def",
 			ph:             '$',
 			delim:          '|',
@@ -190,7 +190,7 @@ func TestNew(t *testing.T) {
 		},
 		// #16
 		{
-			tree:         New("#16").Add("/foo/:bar/baz", "qux"),
+			tree:         New("#16").WithNode("/foo/:bar/baz", "qux"),
 			str:          "/foo/123/qux",
 			ph:           ':',
 			delim:        '/',
@@ -199,7 +199,7 @@ func TestNew(t *testing.T) {
 		},
 		// #17
 		{
-			tree:           New("#17").Add("/foo/:bar/:baz", nil),
+			tree:           New("#17").WithNode("/foo/:bar/:baz", nil),
 			str:            "/foo/123/456",
 			ph:             ':',
 			delim:          '/',
