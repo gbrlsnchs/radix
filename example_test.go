@@ -17,9 +17,25 @@ func Example() {
 		WithNode("rubicon", 6).
 		WithNode("rubicundus", 7)
 
-	t.Sort()
+	t.Sort(patricia.AscLabelSort)
 
 	err := t.Debug()
+
+	if err != nil {
+		// ...
+	}
+
+	t.Sort(patricia.DescLabelSort)
+
+	err = t.Debug()
+
+	if err != nil {
+		// ...
+	}
+
+	t.Sort(patricia.PrioritySort)
+
+	err = t.Debug()
 
 	if err != nil {
 		// ...

@@ -12,6 +12,7 @@ type Node struct {
 	edges    []*edge
 	priority int
 	depth    int
+	st       SortingTechnique
 }
 
 // Depth returns the node's depth.
@@ -31,6 +32,14 @@ func (n *Node) Len() int {
 
 // Less compares two nodes for sorting based on their priority.
 func (n *Node) Less(i, j int) bool {
+	if n.st == AscLabelSort {
+		return n.edges[i].label < n.edges[j].label
+	}
+
+	if n.st == DescLabelSort {
+		return n.edges[i].label > n.edges[j].label
+	}
+
 	return n.edges[i].node != nil &&
 		n.edges[j].node != nil &&
 		n.edges[i].node.priority > n.edges[j].node.priority
@@ -106,10 +115,12 @@ func (n *Node) incrDepth() {
 }
 
 // sort sorts the node and its children recursively.
-func (n *Node) sort() {
+func (n *Node) sort(st SortingTechnique) {
+	n.st = st
+
 	sort.Sort(n)
 
 	for _, e := range n.edges {
-		e.node.sort()
+		e.node.sort(st)
 	}
 }
