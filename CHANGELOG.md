@@ -19,6 +19,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Tests are now run in the correct order.
 - `Tree.Add` now correctly adds a node as a prefix.
 
+### Removed
+- `Tree.WithNode` and `Tree.WithoutNode`.
+
 ## [0.2.1] - 2017-11-11
 ### Added
 - Benchmark flag.

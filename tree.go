@@ -294,20 +294,6 @@ func (t *Tree) String(debug bool) (string, error) {
 	return buf.String(), nil
 }
 
-// WithNode returns a tree with a new node inserted.
-func (t *Tree) WithNode(s string, v interface{}) *Tree {
-	t.Add(s, v)
-
-	return t
-}
-
-// WithoutNode returns a tree without a specific node.
-func (t *Tree) WithoutNode(s string) *Tree {
-	t.Del(s)
-
-	return t
-}
-
 // get retrieves a node dynamically or not.
 func (t *Tree) get(s string, ph, delim rune) (*Node, map[string]string) {
 	sfound := 0

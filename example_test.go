@@ -8,15 +8,15 @@ import (
 
 func Example() {
 	// Example from https://upload.wikimedia.org/wikipedia/commons/a/ae/Patricia_trie.svg.
-	t := patricia.New("Example").
-		WithNode("romane", 1).
-		WithNode("romanus", 2).
-		WithNode("romulus", 3).
-		WithNode("rubens", 4).
-		WithNode("ruber", 5).
-		WithNode("rubicon", 6).
-		WithNode("rubicundus", 7)
+	t := patricia.New("Example")
 
+	t.Add("romane", 1)
+	t.Add("romanus", 2)
+	t.Add("romulus", 3)
+	t.Add("rubens", 4)
+	t.Add("ruber", 5)
+	t.Add("rubicon", 6)
+	t.Add("rubicundus", 7)
 	t.Sort(patricia.AscLabelSort)
 
 	err := t.Debug()
@@ -48,8 +48,9 @@ func Example() {
 }
 
 func Example_named() {
-	t := patricia.New("Named Edge Example").
-		WithNode("foo@bar!@baz", nil)
+	t := patricia.New("Named Edge Example")
+
+	t.Add("foo@bar!@baz", nil)
 
 	err := t.Debug()
 
