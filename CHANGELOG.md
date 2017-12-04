@@ -4,12 +4,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Added
+- Alphabetical sorting.
+
+### Changed
+- Sorting is not made automatically anymore.
+
+### Fixed
+- CHANGELOG code citations are shown as code instead of ordinary text.
+
 ## [0.2.1] - 2017-11-11
 ### Added
 - Benchmark flag.
 
 ### Fixed
-- goimports installation missing.
+- `goimports` installation missing.
 
 ## [0.2.0] - 2017-11-08
 ### Added
@@ -24,7 +34,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Some use cases to the tests table.
 
 ### Changed
-- Variable name "Val" to "Value".
+- Variable name `Node.Val` to `Node.Value`.
 
 ### Fixed
 - GetByRune method returning a non-nil map even when not matching the string.
@@ -54,6 +64,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - This package's source code, including examples and tests.
 - Go dep files.
 
+[Unreleased]: https://github.com/gbrlsnchs/patricia/compare/v0.2.1...HEAD
 [0.2.1]: https://github.com/gbrlsnchs/patricia/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/gbrlsnchs/patricia/compare/v0.1.3...v0.2.0
 [0.1.3]: https://github.com/gbrlsnchs/patricia/compare/v0.1.2...v0.1.3
