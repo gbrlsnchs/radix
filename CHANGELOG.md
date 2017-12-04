@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 - CHANGELOG code citations are shown as code instead of ordinary text.
 - README typo.
+- Tests are now run in the correct order.
 
 ## [0.2.1] - 2017-11-11
 ### Added
