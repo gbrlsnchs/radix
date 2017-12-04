@@ -39,7 +39,7 @@ walk:
 			str := s[sfound:]
 
 			for i := range e.label {
-				if e.label[i] == str[cfound] {
+				if cfound < len(str) && e.label[i] == str[cfound] {
 					cfound++
 
 					continue
@@ -63,6 +63,31 @@ walk:
 				tnode.priority++
 			}
 
+			// The conditions below only happen if
+			// the whole string has been matched.
+			if sfound == len(s) {
+				// When the string already exists inside the tree and
+				// there's nothing more to add to the latter,
+				// only the value is substituted.
+				if cfound == len(next.label) {
+					tnode.Value = v
+
+					break walk
+				}
+
+				// When the string is a prefix of the edge's label,
+				// it splits the latter into the prefix and a new child,
+				// the remaining label without the prefix.
+				tnode.edges = []*edge{
+					newEdge(next.label[len(s[sfound-cfound:]):], tnode.clone()),
+				}
+				tnode.Value = v
+				next.label = next.label[:len(s[sfound-cfound:])]
+				t.size++
+
+				break walk
+			}
+
 			// The string "s" is a splitter or, in other words,
 			// it shares a common prefix with an edge and thus
 			// splits the edge label into the prefix (parent) and
@@ -82,31 +107,6 @@ walk:
 
 				tnode.Value = nil
 				next.label = next.label[:cfound]
-				t.size += 2
-
-				break walk
-			}
-
-			// The conditions below only happen if
-			// the whole string has been matched.
-			if sfound == len(s) {
-				// When the string already exists inside the tree and
-				// there's nothing more to add to the latter,
-				// only the value is substituted.
-				if cfound == len(next.label) {
-					tnode.Value = v
-
-					break walk
-				}
-
-				// When the string is a prefix of the edge's label,
-				// it splits the latter into the prefix and a new child,
-				// the remaining label without the prefix.
-				tnode.edges = []*edge{
-					newEdge(next.label[len(s[sfound:]):], tnode.clone()),
-				}
-				tnode.Value = v
-				next.label = next.label[:len(s[sfound:])]
 				t.size += 2
 
 				break walk
@@ -144,7 +144,7 @@ func (t *Tree) Del(s string) {
 	tnode := t.root
 	edgeIndex := 0
 	var parent *edge
-	var priorityPointers []*int
+	var priorityPtrs []*int
 
 	for tnode != nil && found < len(s) {
 		var next *edge
@@ -168,7 +168,7 @@ func (t *Tree) Del(s string) {
 
 			tnode = next.node
 			found += len(next.label)
-			priorityPointers = append(priorityPointers, &tnode.priority)
+			priorityPtrs = append(priorityPtrs, &tnode.priority)
 
 			if found < len(s) {
 				parent = next
@@ -189,7 +189,7 @@ func (t *Tree) Del(s string) {
 		}
 
 		if tnode.Value != nil {
-			for _, p := range priorityPointers {
+			for _, p := range priorityPtrs {
 				*p--
 			}
 		}
@@ -251,6 +251,7 @@ func (t *Tree) String(debug bool) (string, error) {
 	buf := &bytes.Buffer{}
 	green := color.New(color.FgGreen).SprintfFunc()
 	magenta := color.New(color.FgMagenta).SprintfFunc()
+	bold := color.New(color.Bold).SprintFunc()
 
 	_, err := buf.WriteString(green("\n%s", t.name))
 
@@ -258,11 +259,21 @@ func (t *Tree) String(debug bool) (string, error) {
 		return "", err
 	}
 
-	if debug {
-		buf.WriteString(magenta(" (# of nodes: %d)", t.Size()))
+	_, err = buf.WriteString(bold("\n."))
+
+	if err != nil {
+		return "", err
 	}
 
-	_, err = buf.Write([]byte{'\n', '.', '\n'})
+	if debug {
+		_, err = buf.WriteString(magenta(" (%d nodes)", t.Size()))
+
+		if err != nil {
+			return "", err
+		}
+	}
+
+	err = buf.WriteByte('\n')
 
 	if err != nil {
 		return "", err
