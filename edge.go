@@ -28,6 +28,7 @@ func (e *edge) buffer(debug bool, tabList []bool) (*bytes.Buffer, error) {
 	red := color.New(color.FgRed).SprintfFunc()
 	green := color.New(color.FgGreen).SprintFunc()
 	magenta := color.New(color.FgMagenta).SprintfFunc()
+	bold := color.New(color.Bold).SprintFunc()
 
 	if len(tabList) > 1 {
 		for _, tlist := range tabList[:len(tabList)-1] {
@@ -37,12 +38,17 @@ func (e *edge) buffer(debug bool, tabList []bool) (*bytes.Buffer, error) {
 				continue
 			}
 
-			branches = append(branches, "|   "...)
+			branches = append(branches, "│   "...)
 		}
 	}
 
-	branches = append(branches, "+-- "...)
+	if !tabList[len(tabList)-1] {
+		branches = append(branches, "├"...)
+	} else {
+		branches = append(branches, "└"...)
+	}
 
+	branches = append(branches, "── "...)
 	_, err := buf.Write(branches)
 
 	if err != nil {
@@ -50,14 +56,14 @@ func (e *edge) buffer(debug bool, tabList []bool) (*bytes.Buffer, error) {
 	}
 
 	if debug {
-		_, err = buf.WriteString(red("(%d) ", e.node.priority))
+		_, err = buf.WriteString(red("%d↑ ", e.node.priority))
 
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	_, err = buf.WriteString(e.label)
+	_, err = buf.WriteString(bold(e.label))
 
 	if err != nil {
 		return nil, err
@@ -72,7 +78,7 @@ func (e *edge) buffer(debug bool, tabList []bool) (*bytes.Buffer, error) {
 	}
 
 	if debug {
-		_, err = buf.WriteString(magenta(" -> %#v", e.node.Value))
+		_, err = buf.WriteString(magenta(" → %#v", e.node.Value))
 
 		if err != nil {
 			return nil, err

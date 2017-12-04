@@ -10,9 +10,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 - Sorting is not made automatically anymore.
+- Characters in the printed tree.
+- README file.
 
 ### Fixed
 - CHANGELOG code citations are shown as code instead of ordinary text.
+- README typo.
 
 ## [0.2.1] - 2017-11-11
 ### Added
