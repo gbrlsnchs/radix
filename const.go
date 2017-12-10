@@ -1,4 +1,4 @@
-package patricia
+package radix
 
 // SortingTechnique is the technique used
 // to sort the tree.

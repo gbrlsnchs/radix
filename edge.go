@@ -1,4 +1,4 @@
-package patricia
+package radix
 
 import (
 	"bytes"
@@ -6,7 +6,7 @@ import (
 	"github.com/fatih/color"
 )
 
-// edge is a PATRICIA tree edge.
+// edge is a radix tree edge.
 type edge struct {
 	label string
 	node  *Node

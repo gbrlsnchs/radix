@@ -1,14 +1,14 @@
-package patricia_test
+package radix_test
 
 import (
 	"fmt"
 
-	"github.com/gbrlsnchs/patricia"
+	"github.com/gbrlsnchs/radix"
 )
 
 func Example() {
 	// Example from https://upload.wikimedia.org/wikipedia/commons/a/ae/Patricia_trie.svg.
-	t := patricia.New("Example")
+	t := radix.New("Example")
 
 	t.Add("romane", 1)
 	t.Add("romanus", 2)
@@ -17,7 +17,7 @@ func Example() {
 	t.Add("ruber", 5)
 	t.Add("rubicon", 6)
 	t.Add("rubicundus", 7)
-	t.Sort(patricia.AscLabelSort)
+	t.Sort(radix.AscLabelSort)
 
 	err := t.Debug()
 
@@ -25,7 +25,7 @@ func Example() {
 		// ...
 	}
 
-	t.Sort(patricia.DescLabelSort)
+	t.Sort(radix.DescLabelSort)
 
 	err = t.Debug()
 
@@ -33,7 +33,7 @@ func Example() {
 		// ...
 	}
 
-	t.Sort(patricia.PrioritySort)
+	t.Sort(radix.PrioritySort)
 
 	err = t.Debug()
 
@@ -48,7 +48,7 @@ func Example() {
 }
 
 func Example_named() {
-	t := patricia.New("Named Edge Example")
+	t := radix.New("Named Edge Example")
 
 	t.Add("foo@bar!@baz", nil)
 

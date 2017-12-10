@@ -1,61 +1,91 @@
-package patricia_test
+package radix_test
 
 import (
 	"testing"
 
-	. "github.com/gbrlsnchs/patricia"
+	. "github.com/gbrlsnchs/radix"
 )
 
 func BenchmarkSingleStatic(b *testing.B) {
 	b.ReportAllocs()
 
-	tree := New("bench")
+	t := New("BenchmarkSingleStatic")
 
-	tree.Add("/foo/bar/baz/qux", nil)
+	t.Add("/foo/bar/baz/qux", nil)
 
 	for i := 0; i < b.N; i++ {
-		_ = tree.Get("/foo/bar/baz/qux")
+		_ = t.Get("/foo/bar/baz/qux")
 	}
 }
 
 func BenchmarkSingleDynamic(b *testing.B) {
 	b.ReportAllocs()
 
-	tree := New("bench")
+	t := New("bench")
 
-	tree.Add("/foo/:bar/:baz/:qux", nil)
+	t.Add("/foo/:bar/:baz/:qux", nil)
 
 	for i := 0; i < b.N; i++ {
-		_, _ = tree.GetByRune("/foo/123/456/789", ':', '/')
+		_, _ = t.GetByRune("/foo/123/456/789", ':', '/')
 	}
 }
 
 func BenchmarkMultipleStatic(b *testing.B) {
 	b.ReportAllocs()
 
-	tree := New("bench")
+	t := New("BenchmarkMultipleStatic")
 
-	tree.Add("/foo", nil)
-	tree.Add("/foo/bar", nil)
-	tree.Add("/foo/bar/baz", nil)
-	tree.Add("/foo/bar/baz/qux", nil)
+	t.Add("/foo", nil)
+	t.Add("/foo/bar", nil)
+	t.Add("/foo/bar/baz", nil)
+	t.Add("/foo/bar/baz/qux", nil)
 
 	for i := 0; i < b.N; i++ {
-		_ = tree.Get("/foo/bar/baz/qux")
+		_ = t.Get("/foo/bar/baz/qux")
 	}
 }
 
 func BenchmarkMultipleDynamic(b *testing.B) {
 	b.ReportAllocs()
 
-	tree := New("bench")
+	t := New("BenchmarkMultipleDynamic")
 
-	tree.Add("/foo", nil)
-	tree.Add("/foo/:bar", nil)
-	tree.Add("/foo/:bar/:baz", nil)
-	tree.Add("/foo/:bar/:baz/:qux", nil)
+	t.Add("/foo", nil)
+	t.Add("/foo/:bar", nil)
+	t.Add("/foo/:bar/:baz", nil)
+	t.Add("/foo/:bar/:baz/:qux", nil)
 
 	for i := 0; i < b.N; i++ {
-		_, _ = tree.GetByRune("/foo/123/456/789", ':', '/')
+		_, _ = t.GetByRune("/foo/123/456/789", ':', '/')
+	}
+}
+
+func BenchmarkLongString(b *testing.B) {
+	b.ReportAllocs()
+
+	t := New("BenchmarkLongString")
+
+	t.Add("This is a very, very long string, so let's benchmark it.", nil)
+
+	for i := 0; i < b.N; i++ {
+		_ = t.Get("This is a very, very long string, so let's benchmark it.")
+	}
+}
+
+func BenchmarkManyWords(b *testing.B) {
+	b.ReportAllocs()
+
+	t := New("BenchmarkManyWords")
+
+	t.Add("romane", 1)
+	t.Add("romanus", 2)
+	t.Add("romulus", 3)
+	t.Add("rubens", 4)
+	t.Add("ruber", 5)
+	t.Add("rubicon", 6)
+	t.Add("rubicundus", 7)
+
+	for i := 0; i < b.N; i++ {
+		_ = t.Get("romanus")
 	}
 }

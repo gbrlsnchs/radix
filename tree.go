@@ -1,4 +1,4 @@
-package patricia
+package radix
 
 import (
 	"bytes"
@@ -8,7 +8,7 @@ import (
 	"github.com/fatih/color"
 )
 
-// Tree is a PATRICIA Tree.
+// Tree is a radix tree.
 type Tree struct {
 	// name is the tree's name.
 	name string
@@ -19,7 +19,7 @@ type Tree struct {
 	size uint
 }
 
-// New creates a named PATRICIA tree with a single node (its root).
+// New creates a named radix tree with a single node (its root).
 func New(name string) *Tree {
 	return &Tree{name: name, root: &Node{}}
 }

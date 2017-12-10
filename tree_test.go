@@ -1,10 +1,10 @@
-package patricia_test
+package radix_test
 
 import (
 	"strconv"
 	"testing"
 
-	. "github.com/gbrlsnchs/patricia"
+	. "github.com/gbrlsnchs/radix"
 
 	"github.com/stretchr/testify/assert"
 )

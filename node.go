@@ -1,11 +1,11 @@
-package patricia
+package radix
 
 import (
 	"bytes"
 	"sort"
 )
 
-// Node is a node of a PATRICIA tree.
+// Node is a node of a radix tree.
 type Node struct {
 	// Value is a value of any type held by a node.
 	Value    interface{}
