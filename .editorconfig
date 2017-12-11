@@ -8,4 +8,9 @@ indent_style = space
 
 [*.go]
 indent_size = 8
+
+[Makefile]
+indent_size = 4
+
+[{Makefile,*.go}]
 indent_style = tab
