@@ -4,12 +4,17 @@ import (
 	"bytes"
 	"log"
 	"strings"
+	"sync"
 
 	"github.com/fatih/color"
 )
 
 // Tree is a radix tree.
 type Tree struct {
+	// Safe tells whether the tree's operations
+	// should be thread-safe. By default, the tree's
+	// not thread-safe.
+	Safe bool
 	// name is the tree's name.
 	name string
 	// root is the tree's root.
@@ -17,18 +22,29 @@ type Tree struct {
 	// size is the total number of nodes
 	// without the tree's root.
 	size uint
+	// mtx controls the operations' safety.
+	mtx *sync.RWMutex
 }
 
 // New creates a named radix tree with a single node (its root).
 func New(name string) *Tree {
-	return &Tree{name: name, root: &Node{}}
+	return &Tree{name: name, root: &Node{}, mtx: &sync.RWMutex{}}
 }
 
 // Add adds a new node to the tree.
 func (t *Tree) Add(s string, v interface{}) {
+	if v == nil {
+		return
+	}
+
 	sfound := 0
 	cfound := 0
 	tnode := t.root
+
+	if t.Safe {
+		t.mtx.Lock()
+		defer t.mtx.Unlock()
+	}
 
 walk:
 	for {
@@ -146,6 +162,11 @@ func (t *Tree) Del(s string) {
 	var parent *edge
 	var priorityPtrs []*int
 
+	if t.Safe {
+		t.mtx.Lock()
+		defer t.mtx.Unlock()
+	}
+
 	for tnode != nil && found < len(s) {
 		var next *edge
 
@@ -237,6 +258,11 @@ func (t *Tree) Print() error {
 // Size returns the total numbers of nodes the tree has,
 // including the root.
 func (t *Tree) Size() uint {
+	if t.Safe {
+		t.mtx.RLock()
+		defer t.mtx.RUnlock()
+	}
+
 	return t.size + 1
 }
 
@@ -263,6 +289,11 @@ func (t *Tree) String(debug bool) (string, error) {
 
 	if err != nil {
 		return "", err
+	}
+
+	if t.Safe {
+		t.mtx.RLock()
+		defer t.mtx.RUnlock()
 	}
 
 	if debug {
@@ -299,6 +330,11 @@ func (t *Tree) get(s string, ph, delim rune) (*Node, map[string]string) {
 	sfound := 0
 	tnode := t.root
 	var params map[string]string
+
+	if t.Safe {
+		t.mtx.RLock()
+		defer t.mtx.RUnlock()
+	}
 
 	for tnode != nil && sfound < len(s) {
 		var next *edge

@@ -3,6 +3,7 @@ package radix_test
 import (
 	"strconv"
 	"testing"
+	"time"
 
 	. "github.com/gbrlsnchs/radix"
 
@@ -30,12 +31,13 @@ func TestNew(t *testing.T) {
 		},
 		// #1
 		{
-			tree:         New("#1"),
-			str:          "test",
-			expected:     true,
-			expectedSize: 2,
+			tree:          New("#1"),
+			str:           "test",
+			expected:      true,
+			expectedSize:  2,
+			expectedValue: "foo",
 			handlerFunc: func(t *Tree) {
-				t.Add("test", nil)
+				t.Add("test", "foo")
 			},
 		},
 		// #2
@@ -80,9 +82,10 @@ func TestNew(t *testing.T) {
 			ph:             '@',
 			expected:       true,
 			expectedSize:   2,
+			expectedValue:  "foo",
 			expectedParams: map[string]string{"param": "foo"},
 			handlerFunc: func(t *Tree) {
-				t.Add("test:@param", nil)
+				t.Add("test:@param", "foo")
 			},
 		},
 		// #6
@@ -138,7 +141,7 @@ func TestNew(t *testing.T) {
 			expectedValue:  "baz",
 			expectedParams: map[string]string{"param1": "foo", "param2": "bar", "param3": "baz"},
 			handlerFunc: func(t *Tree) {
-				t.Add("test", nil)
+				t.Add("test", ".")
 				t.Add("test:@param1", "foo")
 				t.Add("test:@param1:@param2", "bar")
 				t.Add("test:@param1:@param2:@param3", "baz")
@@ -151,11 +154,11 @@ func TestNew(t *testing.T) {
 			ph:             '@',
 			delim:          ':',
 			expected:       true,
-			expectedSize:   3,
+			expectedSize:   4,
 			expectedValue:  "baz",
 			expectedParams: map[string]string{"param2": "foo", "param3": "bar"},
 			handlerFunc: func(t *Tree) {
-				t.Add("test", nil)
+				t.Add("test", "foo")
 				t.Add("test:@param1", "foo")
 				t.Add("test:@param1:@param2", "bar")
 				t.Add("test:@param1:@param2:@param3", "baz")
@@ -255,9 +258,10 @@ func TestNew(t *testing.T) {
 			delim:          '/',
 			expected:       true,
 			expectedSize:   2,
+			expectedValue:  "foo",
 			expectedParams: map[string]string{"bar": "123", "baz": "456"},
 			handlerFunc: func(t *Tree) {
-				t.Add("/foo/:bar/:baz", nil)
+				t.Add("/foo/:bar/:baz", "foo")
 			},
 		},
 		// #18
@@ -269,7 +273,7 @@ func TestNew(t *testing.T) {
 			expectedValue: "foo",
 			handlerFunc: func(t *Tree) {
 				t.Add("testing", "foo")
-				t.Add("test", nil)
+				t.Add("test", "bar")
 			},
 		},
 		// #19
@@ -283,7 +287,7 @@ func TestNew(t *testing.T) {
 			expectedParams: map[string]string{"bar": "123"},
 			handlerFunc: func(t *Tree) {
 				t.Add("foo*bar", "foo")
-				t.Add("foo", nil)
+				t.Add("foo", "bar")
 			},
 		},
 	}
@@ -322,5 +326,33 @@ func TestNew(t *testing.T) {
 			a.Exactly(test.expectedValue, n.Value, index)
 			t.Logf("n.Value = %#v\n", n.Value)
 		}
+	}
+}
+
+func TestRace(t *testing.T) {
+	list := []string{
+		"foo",
+		"bar",
+		"foobar",
+		"foobarbaz",
+		"qux",
+		"barbazqux",
+	}
+	tree := New("TestRace")
+	tree.Safe = true
+
+	for i, n := range list {
+		go func(i int, n string) {
+			tree.Add(n, i)
+			time.Sleep(time.Second * 3)
+		}(i, n)
+	}
+
+	for _, n := range list {
+		go func(n string) {
+			_ = tree.Get(n)
+
+			time.Sleep(time.Second * 3)
+		}(n)
 	}
 }

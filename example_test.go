@@ -2,6 +2,7 @@ package radix_test
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/gbrlsnchs/radix"
 )
@@ -50,7 +51,7 @@ func Example() {
 func Example_named() {
 	t := radix.New("Named Edge Example")
 
-	t.Add("foo@bar!@baz", nil)
+	t.Add("foo@bar!@baz", "foobar")
 
 	err := t.Debug()
 
@@ -65,4 +66,33 @@ func Example_named() {
 	// Output:
 	// 123
 	// 456
+}
+
+func ExampleTree_Safe() {
+	list := []string{
+		"romane",
+		"romanus",
+		"romulus",
+		"rubens",
+		"ruber",
+		"rubicon",
+		"rubicundus",
+	}
+	tree := radix.New("TestRace")
+	tree.Safe = true
+
+	for i, n := range list {
+		go func(i int, n string) {
+			tree.Add(n, i)
+			time.Sleep(time.Second * 3)
+		}(i+1, n)
+	}
+
+	for _, n := range list {
+		go func(n string) {
+			_ = tree.Get(n)
+
+			time.Sleep(time.Second * 3)
+		}(n)
+	}
 }
