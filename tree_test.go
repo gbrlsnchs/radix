@@ -290,6 +290,16 @@ func TestNew(t *testing.T) {
 				t.Add("foo", "bar")
 			},
 		},
+		// #20
+		{
+			tree:         New("#20"),
+			str:          "",
+			expected:     false,
+			expectedSize: 1,
+			handlerFunc: func(t *Tree) {
+				t.Add("", "foo")
+			},
+		},
 	}
 
 	for i, test := range tests {

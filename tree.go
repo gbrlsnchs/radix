@@ -33,7 +33,7 @@ func New(name string) *Tree {
 
 // Add adds a new node to the tree.
 func (t *Tree) Add(s string, v interface{}) {
-	if v == nil {
+	if s == "" || v == nil {
 		return
 	}
 
@@ -329,6 +329,11 @@ func (t *Tree) String(debug bool) (string, error) {
 func (t *Tree) get(s string, ph, delim rune) (*Node, map[string]string) {
 	sfound := 0
 	tnode := t.root
+
+	if tnode.IsLeaf() {
+		return nil, nil
+	}
+
 	var params map[string]string
 
 	if t.Safe {
