@@ -330,16 +330,16 @@ func (t *Tree) get(s string, ph, delim rune) (*Node, map[string]string) {
 	sfound := 0
 	tnode := t.root
 
+	if t.Safe {
+		t.mtx.RLock()
+		defer t.mtx.RUnlock()
+	}
+
 	if tnode.IsLeaf() {
 		return nil, nil
 	}
 
 	var params map[string]string
-
-	if t.Safe {
-		t.mtx.RLock()
-		defer t.mtx.RUnlock()
-	}
 
 	for tnode != nil && sfound < len(s) {
 		var next *edge

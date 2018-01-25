@@ -360,7 +360,12 @@ func TestRace(t *testing.T) {
 
 	for _, n := range list {
 		go func(n string) {
-			_ = tree.Get(n)
+			v := tree.Get(n)
+			_ = tree.Size()
+			_ = tree.Debug()
+
+			tree.Del(n)
+			tree.Add(n, v)
 
 			time.Sleep(time.Second * 3)
 		}(n)
