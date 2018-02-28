@@ -351,7 +351,7 @@ func (t *Tree) get(s string, ph, delim rune) (*Node, map[string]string) {
 				// Checks for a placeholder.
 				i := strings.IndexRune(e.label[lfound:], ph)
 
-				// If not placeholder is found,
+				// If no placeholder is found,
 				// then the limit is the end of the word.
 				// Also, if the placeholder equals the delimiter,
 				// disregard the label as a named parameter.
