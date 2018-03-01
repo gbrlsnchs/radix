@@ -397,6 +397,12 @@ func (t *Tree) get(s string, ph, delim rune) (*Node, map[string]string) {
 					sdelim = len(s[sfound:])
 				}
 
+				if len(e.label) < lfound+1 {
+					next = e
+
+					break
+				}
+
 				k := e.label[lfound+1 : lfound+ldelim]
 				v := s[sfound : sfound+sdelim]
 
