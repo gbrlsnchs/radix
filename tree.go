@@ -33,6 +33,11 @@ func New(name string) *Tree {
 
 // Add adds a new node to the tree.
 func (t *Tree) Add(s string, v interface{}) {
+	if t.Safe {
+		t.mtx.Lock()
+		defer t.mtx.Unlock()
+	}
+
 	if s == "" || v == nil {
 		return
 	}
@@ -40,11 +45,6 @@ func (t *Tree) Add(s string, v interface{}) {
 	sfound := 0
 	cfound := 0
 	tnode := t.root
-
-	if t.Safe {
-		t.mtx.Lock()
-		defer t.mtx.Unlock()
-	}
 
 walk:
 	for {
@@ -156,16 +156,16 @@ func (t *Tree) Debug() error {
 // If a parent node that holds no value ends up holding only one edge
 // after a deletion of one of its edges, it gets merged with the remaining edge.
 func (t *Tree) Del(s string) {
+	if t.Safe {
+		t.mtx.Lock()
+		defer t.mtx.Unlock()
+	}
+
 	found := 0
 	tnode := t.root
 	edgeIndex := 0
 	var parent *edge
 	var priorityPtrs []*int
-
-	if t.Safe {
-		t.mtx.Lock()
-		defer t.mtx.Unlock()
-	}
 
 	for tnode != nil && found < len(s) {
 		var next *edge
@@ -274,6 +274,11 @@ func (t *Tree) Sort(st SortingTechnique) {
 
 // String returns a string representation of the tree structure.
 func (t *Tree) String(debug bool) (string, error) {
+	if t.Safe {
+		t.mtx.RLock()
+		defer t.mtx.RUnlock()
+	}
+
 	buf := &bytes.Buffer{}
 	green := color.New(color.FgGreen).SprintfFunc()
 	magenta := color.New(color.FgMagenta).SprintfFunc()
@@ -289,11 +294,6 @@ func (t *Tree) String(debug bool) (string, error) {
 
 	if err != nil {
 		return "", err
-	}
-
-	if t.Safe {
-		t.mtx.RLock()
-		defer t.mtx.RUnlock()
 	}
 
 	if debug {
@@ -327,13 +327,13 @@ func (t *Tree) String(debug bool) (string, error) {
 
 // get retrieves a node dynamically or not.
 func (t *Tree) get(s string, ph, delim rune) (*Node, map[string]string) {
-	sfound := 0
-	tnode := t.root
-
 	if t.Safe {
 		t.mtx.RLock()
 		defer t.mtx.RUnlock()
 	}
+
+	sfound := 0
+	tnode := t.root
 
 	if tnode.IsLeaf() {
 		return nil, nil
