@@ -2,8 +2,8 @@ package radix_test
 
 import (
 	"strconv"
+	"sync"
 	"testing"
-	"time"
 
 	. "github.com/gbrlsnchs/radix"
 
@@ -350,11 +350,14 @@ func TestRace(t *testing.T) {
 	}
 	tree := New("TestRace")
 	tree.Safe = true
+	var wg sync.WaitGroup
+
+	wg.Add(len(list) * 2)
 
 	for i, n := range list {
 		go func(i int, n string) {
 			tree.Add(n, i)
-			time.Sleep(time.Second * 3)
+			wg.Done()
 		}(i, n)
 	}
 
@@ -366,8 +369,9 @@ func TestRace(t *testing.T) {
 
 			tree.Del(n)
 			tree.Add(n, v)
-
-			time.Sleep(time.Second * 3)
+			wg.Done()
 		}(n)
 	}
+
+	wg.Wait()
 }
