@@ -34,8 +34,8 @@ func New(name string) *Tree {
 // Add adds a new node to the tree.
 func (t *Tree) Add(s string, v interface{}) {
 	if t.Safe {
-		t.mtx.Lock()
 		defer t.mtx.Unlock()
+		t.mtx.Lock()
 	}
 
 	if s == "" || v == nil {
@@ -157,8 +157,8 @@ func (t *Tree) Debug() error {
 // after a deletion of one of its edges, it gets merged with the remaining edge.
 func (t *Tree) Del(s string) {
 	if t.Safe {
-		t.mtx.Lock()
 		defer t.mtx.Unlock()
+		t.mtx.Lock()
 	}
 
 	found := 0
@@ -259,8 +259,8 @@ func (t *Tree) Print() error {
 // including the root.
 func (t *Tree) Size() uint {
 	if t.Safe {
-		t.mtx.RLock()
 		defer t.mtx.RUnlock()
+		t.mtx.RLock()
 	}
 
 	return t.size + 1
@@ -275,8 +275,8 @@ func (t *Tree) Sort(st SortingTechnique) {
 // String returns a string representation of the tree structure.
 func (t *Tree) String(debug bool) (string, error) {
 	if t.Safe {
-		t.mtx.RLock()
 		defer t.mtx.RUnlock()
+		t.mtx.RLock()
 	}
 
 	buf := &bytes.Buffer{}
@@ -297,7 +297,7 @@ func (t *Tree) String(debug bool) (string, error) {
 	}
 
 	if debug {
-		_, err = buf.WriteString(magenta(" (%d nodes)", t.Size()))
+		_, err = buf.WriteString(magenta(" (%d nodes)", t.size+1))
 
 		if err != nil {
 			return "", err
@@ -328,8 +328,8 @@ func (t *Tree) String(debug bool) (string, error) {
 // get retrieves a node dynamically or not.
 func (t *Tree) get(s string, ph, delim rune) (*Node, map[string]string) {
 	if t.Safe {
-		t.mtx.RLock()
 		defer t.mtx.RUnlock()
+		t.mtx.RLock()
 	}
 
 	sfound := 0
