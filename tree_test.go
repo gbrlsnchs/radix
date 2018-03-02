@@ -352,25 +352,22 @@ func TestRace(t *testing.T) {
 	tree.Safe = true
 	var wg sync.WaitGroup
 
-	wg.Add(len(list) * 2)
+	wg.Add(len(list))
 
-	for i, n := range list {
+	for i := range list {
+		n := list[i]
+
 		go func(i int, n string) {
+			defer wg.Done()
 			tree.Add(n, i)
-			wg.Done()
-		}(i, n)
-	}
 
-	for _, n := range list {
-		go func(n string) {
-			v := tree.Get(n)
+			_ = tree.Get(n)
 			_ = tree.Size()
 			_ = tree.Debug()
 
 			tree.Del(n)
-			tree.Add(n, v)
-			wg.Done()
-		}(n)
+			tree.Add(n, i)
+		}(i, n)
 	}
 
 	wg.Wait()
