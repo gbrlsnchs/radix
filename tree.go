@@ -269,6 +269,11 @@ func (t *Tree) Size() uint {
 // Sort sorts the tree nodes and its children recursively
 // according to their priority counter.
 func (t *Tree) Sort(st SortingTechnique) {
+	if t.Safe {
+		defer t.mtx.Unlock()
+		t.mtx.Lock()
+	}
+
 	t.root.sort(st)
 }
 

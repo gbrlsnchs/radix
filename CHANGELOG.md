@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Added
+- Concurrency safety when sorting the tree.
+
 ## [0.4.5] - 2018-03-02
 ### Fixed
 - Recursively locking for reading in the same goroutine when calling `(*Tree).String`.
@@ -116,6 +120,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - This package's source code, including examples and tests.
 - Go dep files.
 
+[Unreleased]: https://github.com/gbrlsnchs/radix/compare/v0.4.5...HEAD
 [0.4.5]: https://github.com/gbrlsnchs/radix/compare/v0.4.4...v0.4.5
 [0.4.4]: https://github.com/gbrlsnchs/radix/compare/v0.4.3...v0.4.4
 [0.4.3]: https://github.com/gbrlsnchs/radix/compare/v0.4.2...v0.4.3
