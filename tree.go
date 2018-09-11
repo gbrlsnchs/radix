@@ -1,448 +1,382 @@
 package radix
 
 import (
-	"bytes"
-	"log"
 	"strings"
 	"sync"
 
 	"github.com/fatih/color"
 )
 
+const (
+	// Tsafe activates thread safety.
+	Tsafe = 1 << iota
+	// Tdebug adds more information to the tree's string representation.
+	Tdebug
+	// Tbinary uses a binary PATRICIA tree instead of a prefix Radix tree.
+	Tbinary
+	// Tnocolor disables colorful output.
+	Tnocolor
+)
+
 // Tree is a radix tree.
 type Tree struct {
-	// Safe tells whether the tree's operations
-	// should be thread-safe. By default, the tree's
-	// not thread-safe.
-	Safe bool
-	// name is the tree's name.
-	name string
-	// root is the tree's root.
-	root *Node
-	// size is the total number of nodes
-	// without the tree's root.
-	size uint
-	// mtx controls the operations' safety.
-	mtx *sync.RWMutex
+	root        *Node
+	size        int // number of nodes without the root
+	length      int // total byte size
+	safe        bool
+	binary      bool
+	placeholder byte
+	delim       byte
+	mtx         *sync.RWMutex
+	bd          *builder
 }
 
 // New creates a named radix tree with a single node (its root).
-func New(name string) *Tree {
-	return &Tree{name: name, root: &Node{}, mtx: &sync.RWMutex{}}
+func New(flags int) *Tree {
+	tr := &Tree{
+		root: &Node{},
+		size: 1,
+	}
+	if flags&Tbinary > 0 {
+		tr.binary = true
+		tr.root.edges = make([]*edge, 2) // create two empty edges
+	}
+	if flags&Tsafe > 0 {
+		tr.mtx = &sync.RWMutex{}
+		tr.safe = true
+	}
+	tr.bd = &builder{
+		Builder: &strings.Builder{},
+		debug:   flags&Tdebug > 0,
+	}
+	tr.bd.colors[colorRed] = color.New(color.FgRed)
+	tr.bd.colors[colorGreen] = color.New(color.FgGreen)
+	tr.bd.colors[colorMagenta] = color.New(color.FgMagenta)
+	tr.bd.colors[colorBold] = color.New(color.Bold)
+	for _, c := range tr.bd.colors {
+		if flags&Tnocolor > 0 {
+			c.DisableColor()
+		}
+	}
+	return tr
 }
 
 // Add adds a new node to the tree.
-func (t *Tree) Add(s string, v interface{}) {
-	if t.Safe {
-		defer t.mtx.Unlock()
-		t.mtx.Lock()
-	}
-
-	if s == "" || v == nil {
+func (tr *Tree) Add(label string, v interface{}) {
+	// No empty strings or interfaces allowed.
+	if label == "" || v == nil {
 		return
 	}
-
-	sfound := 0
-	cfound := 0
-	tnode := t.root
-
-walk:
+	if tr.safe {
+		defer tr.mtx.Unlock()
+		tr.mtx.Lock()
+	}
+	tnode := tr.root
+	if tr.binary {
+		size, length := tnode.addBinary(label, v)
+		tr.size += size
+		tr.length += length
+		return
+	}
 	for {
 		var next *edge
-
-		for _, e := range tnode.edges {
-			cfound = 0
-			str := s[sfound:]
-
-			for i := range e.label {
-				if cfound < len(str) && e.label[i] == str[cfound] {
-					cfound++
-
+		var slice string
+		for _, edge := range tnode.edges {
+			var found int
+			slice = edge.label
+			for i := range slice {
+				if i < len(label) && slice[i] == label[i] {
+					found++
 					continue
 				}
-
 				break
 			}
-
-			if cfound > 0 {
-				sfound += cfound
-				next = e
-
+			if found > 0 {
+				label = label[found:]
+				slice = slice[found:]
+				next = edge
 				break
 			}
 		}
-
 		if next != nil {
-			tnode = next.node
-
-			if v != nil {
-				tnode.priority++
-			}
-
-			// The conditions below only happen if
-			// the whole string has been matched.
-			if sfound == len(s) {
-				// When the string already exists inside the tree and
-				// there's nothing more to add to the latter,
-				// only the value is substituted.
-				if cfound == len(next.label) {
+			tnode = next.n
+			tnode.priority++
+			// Match the whole word.
+			if len(label) == 0 {
+				// The label is exactly the same as the edge's label,
+				// so just replace its node's value.
+				//
+				// Example:
+				// 	(root) -> tnode("tomato", v1)
+				// 	becomes
+				// 	(root) -> tnode("tomato", v2)
+				if len(slice) == 0 {
 					tnode.Value = v
-
-					break walk
+					return
 				}
-
-				// When the string is a prefix of the edge's label,
-				// it splits the latter into the prefix and a new child,
-				// the remaining label without the prefix.
+				// The label is a prefix of the edge's label.
+				//
+				// Example:
+				// 	(root) -> tnode("tomato", v1)
+				// 	then add "tom"
+				// 	(root) -> ("tom", v2) -> ("ato", v1)
+				next.label = next.label[:len(next.label)-len(slice)]
 				tnode.edges = []*edge{
-					newEdge(next.label[len(s[sfound-cfound:]):], tnode.clone()),
+					&edge{
+						label: slice,
+						n:     tnode.split(),
+					},
 				}
 				tnode.Value = v
-				next.label = next.label[:len(s[sfound-cfound:])]
-				t.size++
-
-				break walk
+				tr.size++
+				tr.length += len(slice)
+				return
 			}
-
-			// The string "s" is a splitter or, in other words,
-			// it shares a common prefix with an edge and thus
-			// splits the edge label into the prefix (parent) and
-			// two children, one being the remaning string per se and
-			// the other being the part that doesn't match the string.
-			if cfound > 0 && cfound < len(next.label) {
+			// Add a new node but break its parent into prefix and
+			// the remaining slice as a new edge.
+			//
+			// Example:
+			// 	(root) -> ("tomato", v1)
+			// 	then add "tornado"
+			// 	(root) -> ("to", nil) -> ("mato", v1)
+			// 	                      +> ("rnado", v2)
+			if len(slice) > 0 {
+				c := tnode.split()
+				c.priority--
 				tnode.edges = []*edge{
-					newEdge(next.label[cfound:], tnode.clone()),
-					newEdge(s[sfound:], tnode.child(v)),
+					&edge{ // the suffix that is split into a new node
+						label: slice,
+						n:     c,
+					},
+					&edge{ // the new node
+						label: label,
+						n: &Node{
+							Value:    v,
+							depth:    tnode.depth + 1,
+							priority: 1,
+						},
+					},
 				}
-
-				for _, e := range tnode.edges {
-					if e.node.Value != nil {
-						e.node.priority = 1
-					}
-				}
-
+				next.label = next.label[:len(next.label)-len(slice)]
 				tnode.Value = nil
-				next.label = next.label[:cfound]
-				t.size += 2
-
-				break walk
+				tr.size += 2
+				tr.length += len(label)
+				return
 			}
-
 			continue
 		}
-
-		// When the string has not been fully matched,
-		// it appends a new child to the last node traversed.
-		tnode.edges = append(tnode.edges, newEdge(s[sfound:], tnode.child(v)))
-		t.size++
+		tnode.edges = append(tnode.edges, &edge{
+			label: label,
+			n: &Node{
+				Value:    v,
+				depth:    tnode.depth + 1,
+				priority: 1,
+			},
+		})
+		tr.size++
+		tr.length += len(label)
+		return
 	}
-}
-
-// Debug prints the tree's structure plus its metadata.
-func (t *Tree) Debug() error {
-	s, err := t.String(true)
-
-	if err != nil {
-		return err
-	}
-
-	log.Println(s)
-
-	return nil
 }
 
 // Del deletes a node.
 //
 // If a parent node that holds no value ends up holding only one edge
 // after a deletion of one of its edges, it gets merged with the remaining edge.
-func (t *Tree) Del(s string) {
-	if t.Safe {
-		defer t.mtx.Unlock()
-		t.mtx.Lock()
+func (tr *Tree) Del(label string) {
+	if string(label) == "" {
+		return
 	}
-
-	found := 0
-	tnode := t.root
-	edgeIndex := 0
+	if tr.safe {
+		defer tr.mtx.Unlock()
+		tr.mtx.Lock()
+	}
+	tnode := tr.root
+	var edgex int
 	var parent *edge
-	var priorityPtrs []*int
-
-	for tnode != nil && found < len(s) {
+	var ptrs []*int
+	for tnode != nil && label != "" {
 		var next *edge
-
-		for _, e := range tnode.edges {
-			if strings.HasPrefix(s[found:], e.label) {
+		// Look for exact matches.
+		for i, e := range tnode.edges {
+			if strings.HasPrefix(label, e.label) {
 				next = e
-
+				edgex = i
 				break
 			}
 		}
-
 		if next != nil {
-			for i, e := range tnode.edges {
-				if next.label == e.label {
-					edgeIndex = i
-
-					break
-				}
-			}
-
-			tnode = next.node
-			found += len(next.label)
-			priorityPtrs = append(priorityPtrs, &tnode.priority)
-
-			if found < len(s) {
+			tnode = next.n
+			label = label[len(next.label):]
+			ptrs = append(ptrs, &tnode.priority)
+			// While not the exact match, set the tnode's parent.
+			if label != "" {
 				parent = next
 			}
-
 			continue
 		}
-
+		// No matches.
 		parent = nil
 		tnode = nil
 	}
-
 	if tnode != nil {
-		parentNode := t.root
-
+		pnode := tr.root // in case label matched in the first try
 		if parent != nil {
-			parentNode = parent.node
+			pnode = parent.n
 		}
-
+		// Decrement the priority of upper nodes.
+		done := make(chan struct{})
 		if tnode.Value != nil {
-			for _, p := range priorityPtrs {
-				*p--
-			}
+			go func() {
+				for _, p := range ptrs {
+					*p--
+				}
+				close(done)
+			}()
 		}
-
-		parentNode.edges = append(parentNode.edges, tnode.edges...)
-		parentNode.edges = append(parentNode.edges[:edgeIndex], parentNode.edges[edgeIndex+1:]...)
-
-		if len(parentNode.edges) == 1 && parentNode.Value == nil && parent != nil {
-			parent.label += parentNode.edges[0].label
-			parentNode.Value = parentNode.edges[0].node.Value
-			parentNode.edges = parentNode.edges[0].node.edges
-			t.size--
+		// Merge tnode's edges with the parent's.
+		pnode.edges = append(pnode.edges, tnode.edges...)
+		// Remove tnode from the parent, leaving only its edges behind.
+		pnode.edges = append(pnode.edges[:edgex], pnode.edges[edgex+1:]...)
+		// When only one edge remained in pnode and its value is nil, they can be merged.
+		if len(pnode.edges) == 1 && pnode.Value == nil && parent != nil {
+			e := pnode.edges[0]
+			parent.label += e.label
+			pnode.Value = e.n.Value
+			pnode.edges = e.n.edges
+			tr.size--
 		}
-
-		t.size--
+		tr.size--
+		if tnode.Value != nil {
+			<-done
+		}
 	}
 }
 
 // Get retrieves a node.
-func (t *Tree) Get(s string) *Node {
-	n, _ := t.get(s, 0, 0)
-
-	return n
-}
-
-// GetByRune dynamically retrieves a node based on a placeholder and a delimiter.
-// It also returns a map of "named parameters".
-func (t *Tree) GetByRune(s string, ph, delim rune) (*Node, map[string]string) {
-	return t.get(s, ph, delim)
-}
-
-// Print prints the tree's structure.
-func (t *Tree) Print() error {
-	s, err := t.String(false)
-
-	if err != nil {
-		return err
+func (tr *Tree) Get(label string) (*Node, map[string]string) {
+	if label == "" {
+		return nil, nil
 	}
+	if tr.safe {
+		defer tr.mtx.RUnlock()
+		tr.mtx.RLock()
+	}
+	tnode := tr.root
+	if tr.binary {
+		return tnode.getBinary(label), nil
+	}
+	var params map[string]string
+	for tnode != nil && label != "" {
+		var next *edge
+	walk:
+		for _, edge := range tnode.edges {
+			slice := edge.label
+			for {
+				phIndex := len(slice)
+				// Check if there are any placeholders.
+				// If there are none, then use the whole word for comparison.
+				if i := strings.IndexByte(slice, tr.placeholder); i >= 0 {
+					phIndex = i
+				}
+				prefix := slice[:phIndex]
+				// If "slice" (until placeholder) is not prefix of
+				// "label", then keep walking.
+				if !strings.HasPrefix(label, prefix) {
+					continue walk
+				}
+				label = label[len(prefix):]
+				// If "slice" is the whole label,
+				// then the match is complete and the algorithm
+				// is ready to go to the next edge.
+				if len(prefix) == len(slice) {
+					next = edge
+					break walk
+				}
+				// Check whether there is a delimiter.
+				// If there isn'tr, then use the whole world as parameter.
+				var delimIndex int
+				slice = slice[phIndex:]
+				if delimIndex = strings.IndexByte(slice[1:], tr.delim) + 1; delimIndex <= 0 {
+					delimIndex = len(slice)
+				}
+				key := slice[1:delimIndex] // remove the placeholder from the map key
+				slice = slice[delimIndex:]
+				if delimIndex = strings.IndexByte(label[1:], tr.delim) + 1; delimIndex <= 0 {
+					delimIndex = len(label)
+				}
+				if params == nil {
+					params = make(map[string]string)
+				}
+				params[key] = label[:delimIndex]
+				label = label[delimIndex:]
+				if slice == "" && label == "" {
+					next = edge
+					break walk
+				}
+			}
+		}
+		if next != nil {
+			tnode = next.n
+			continue
+		}
+		tnode = nil
+	}
+	return tnode, params
+}
 
-	log.Println(s)
+// Len returns the total size of all labels stored in the tree.
+func (tr *Tree) Len() int {
+	return tr.length
+}
 
-	return nil
+// SetBoundaries sets a placeholder and a delimiter for
+// the tree to be able to search for named labels.
+func (tr *Tree) SetBoundaries(placeholder, delim byte) {
+	tr.placeholder = placeholder
+	tr.delim = delim
 }
 
 // Size returns the total numbers of nodes the tree has,
 // including the root.
-func (t *Tree) Size() uint {
-	if t.Safe {
-		defer t.mtx.RUnlock()
-		t.mtx.RLock()
+func (tr *Tree) Size() int {
+	if tr.safe {
+		defer tr.mtx.RUnlock()
+		tr.mtx.RLock()
 	}
-
-	return t.size + 1
+	return tr.size
 }
 
 // Sort sorts the tree nodes and its children recursively
 // according to their priority counter.
-func (t *Tree) Sort(st SortingTechnique) {
-	if t.Safe {
-		defer t.mtx.Unlock()
-		t.mtx.Lock()
+func (tr *Tree) Sort(st SortingTechnique) {
+	if tr.safe {
+		defer tr.mtx.Unlock()
+		tr.mtx.Lock()
 	}
-
-	t.root.sort(st)
+	tr.root.sort(st, tr.binary)
 }
 
 // String returns a string representation of the tree structure.
-func (t *Tree) String(debug bool) (string, error) {
-	if t.Safe {
-		defer t.mtx.RUnlock()
-		t.mtx.RLock()
+func (tr *Tree) String() string {
+	if tr.safe {
+		defer tr.mtx.RUnlock()
+		tr.mtx.RLock()
 	}
-
-	buf := &bytes.Buffer{}
-	green := color.New(color.FgGreen).SprintfFunc()
-	magenta := color.New(color.FgMagenta).SprintfFunc()
-	bold := color.New(color.Bold).SprintFunc()
-
-	_, err := buf.WriteString(green("\n%s", t.name))
-
-	if err != nil {
-		return "", err
-	}
-
-	_, err = buf.WriteString(bold("\n."))
-
-	if err != nil {
-		return "", err
-	}
-
-	if debug {
-		_, err = buf.WriteString(magenta(" (%d nodes)", t.size+1))
-
-		if err != nil {
-			return "", err
+	tr.bd.Reset()
+	tr.bd.colors[colorBold].Fprint(tr.bd, "\n.")
+	if tr.bd.debug {
+		mag := tr.bd.colors[colorMagenta]
+		mag.Fprintf(tr.bd, " (%d node", tr.size)
+		if tr.size != 1 {
+			mag.Fprint(tr.bd, "s") // avoid writing "1 nodes"
 		}
+		mag.Fprint(tr.bd, ")")
 	}
-
-	err = buf.WriteByte('\n')
-
-	if err != nil {
-		return "", err
+	tr.bd.WriteByte('\n')
+	if !tr.binary {
+		// TODO: implement binary string representation
+		tr.root.writeTo(tr.bd)
 	}
-
-	nbuf, err := t.root.buffer(debug)
-
-	if err != nil {
-		return "", err
-	}
-
-	_, err = nbuf.WriteTo(buf)
-
-	if err != nil {
-		return "", err
-	}
-
-	return buf.String(), nil
-}
-
-// get retrieves a node dynamically or not.
-func (t *Tree) get(s string, ph, delim rune) (*Node, map[string]string) {
-	if t.Safe {
-		defer t.mtx.RUnlock()
-		t.mtx.RLock()
-	}
-
-	sfound := 0
-	tnode := t.root
-
-	if tnode.IsLeaf() {
-		return nil, nil
-	}
-
-	var params map[string]string
-
-	for tnode != nil && sfound < len(s) {
-		var next *edge
-
-		for _, e := range tnode.edges {
-			lfound := 0
-
-			for lfound < len(e.label) {
-				// Checks for a placeholder.
-				i := strings.IndexRune(e.label[lfound:], ph)
-
-				// If no placeholder is found,
-				// then the limit is the end of the word.
-				// Also, if the placeholder equals the delimiter,
-				// disregard the label as a named parameter.
-				if i < 0 || ph == delim {
-					i = len(e.label[lfound:])
-				}
-
-				// Checks for a match of the label before the placeholder
-				// in the remaining string.
-				j := strings.Index(s[sfound:], e.label[lfound:lfound+i])
-
-				// If the label before the placeholder is not a prefix
-				// of the string, then the lookup fails.
-				if j < 0 {
-					break
-				}
-
-				// Sums the length of the label slice before the placeholder
-				// to the "found" counter of both the label and the string.
-				llen := len(e.label[lfound : lfound+i])
-				sfound += llen
-				lfound += llen
-
-				// If there's no placeholder ahead,
-				// move to the next edge traverse.
-				if i == len(e.label) {
-					next = e
-
-					break
-				}
-
-				// Finds where the named parameter's key and value end.
-				ldelim := strings.IndexRune(e.label[lfound:], delim)
-				sdelim := strings.IndexRune(s[sfound:], delim)
-
-				// If there's no delimiter, then it ends when
-				// the label and the string themselves end.
-				if ldelim < 0 {
-					ldelim = len(e.label[lfound:])
-				}
-
-				if sdelim < 0 {
-					sdelim = len(s[sfound:])
-				}
-
-				if len(e.label) < lfound+1 {
-					next = e
-
-					break
-				}
-
-				k := e.label[lfound+1 : lfound+ldelim]
-				v := s[sfound : sfound+sdelim]
-
-				if params == nil {
-					params = make(map[string]string)
-				}
-
-				// Adds the named parameter to the "params" map and
-				// sums the label's named parameter's length to "lfound" and
-				// the parameter's value's length to "sfound".
-				params[k] = v
-				lfound += len(k) + 1
-				sfound += len(v)
-			}
-
-			if lfound != len(e.label) {
-				continue
-			}
-
-			next = e
-		}
-
-		if next != nil {
-			tnode = next.node
-
-			continue
-		}
-
-		tnode = nil
-		params = nil
-	}
-
-	if sfound < len(s) {
-		return nil, nil
-	}
-
-	return tnode, params
+	return tr.bd.String()
 }
