@@ -1,9 +1,6 @@
 package radix
 
-import (
-	"bytes"
-	"sort"
-)
+import "sort"
 
 // Node is a node of a radix tree.
 type Node struct {
@@ -12,7 +9,6 @@ type Node struct {
 	edges    []*edge
 	priority int
 	depth    int
-	st       SortingTechnique
 }
 
 // Depth returns the node's depth.
@@ -25,102 +21,111 @@ func (n *Node) IsLeaf() bool {
 	return len(n.edges) == 0
 }
 
-// Len returns the number of edges the node has.
-func (n *Node) Len() int {
-	return len(n.edges)
-}
-
-// Less compares two nodes for sorting based on their priority.
-func (n *Node) Less(i, j int) bool {
-	if n.st == AscLabelSort {
-		return n.edges[i].label < n.edges[j].label
-	}
-
-	if n.st == DescLabelSort {
-		return n.edges[i].label > n.edges[j].label
-	}
-
-	return n.edges[i].node != nil &&
-		n.edges[j].node != nil &&
-		n.edges[i].node.priority > n.edges[j].node.priority
-}
-
 // Priority returns the node's priority.
 func (n *Node) Priority() int {
 	return n.priority
 }
 
-// Swap swaps two edges from the node.
-func (n *Node) Swap(i, j int) {
-	n.edges[i], n.edges[j] = n.edges[j], n.edges[i]
-}
-
-// buffer returns a pointer to a bytes.Buffer containing
-// a subtree structure plus, if debug is truthy, its metadata.
-func (n *Node) buffer(debug bool) (*bytes.Buffer, error) {
-	buf := &bytes.Buffer{}
-
-	for i, e := range n.edges {
-		var nbuf *bytes.Buffer
-		nbuf, err := e.buffer(debug, []bool{i == len(n.edges)-1})
-
-		if err != nil {
-			return nil, err
+func (n *Node) addBinary(label string, v interface{}) (size, length int) {
+	val := make([]byte, 0)
+	for i := range label {
+		for j := uint8(8); j > 0; j-- {
+			bbit := bit(j, label[i])
+			if bbit == 0 {
+				val = append(val, '0')
+			} else {
+				val = append(val, '1')
+			}
+			done := i == len(label)-1 && j == 1
+			if e := n.edges[bbit]; e != nil {
+				if done {
+					e.n.Value = v
+					return
+				}
+				goto next
+			}
+			n.edges[bbit] = &edge{
+				n: &Node{
+					depth: n.depth + 1,
+					edges: make([]*edge, 2),
+				},
+			}
+			if done {
+				n.edges[bbit].n.Value = v
+			}
+			size++
+			length++
+		next:
+			n = n.edges[bbit].n
 		}
+	}
+	return
+}
 
-		_, err = nbuf.WriteTo(buf)
-
-		if err != nil {
-			return nil, err
+func (n *Node) delBinary(label string) (d int) {
+	for i := range label {
+		for j := uint8(8); j > 0; j-- {
+			bbit := bit(j, label[i])
+			done := i == len(label)-1 && j == 1
+			if e := n.edges[bbit]; e != nil {
+				d++
+				if done && n.IsLeaf() { // only delete if node is leaf, otherwise it would break the tree
+					n.edges = make([]*edge, 2)
+					return
+				}
+			}
+			return
 		}
 	}
-
-	return buf, nil
+	return
 }
 
-// child returns a child of the node.
-func (n *Node) child(v interface{}) *Node {
-	c := &Node{
-		Value: v,
-		depth: n.depth + 1,
+func (n *Node) getBinary(label string) *Node {
+	for i := range label {
+		for j := uint8(8); j > 0; j-- {
+			bbit := bit(j, label[i])
+			done := i == len(label)-1 && j == 1
+			if e := n.edges[bbit]; e != nil {
+				if done {
+					return e.n
+				}
+				n = e.n
+				continue
+			}
+			return nil
+		}
 	}
-
-	return c
-}
-
-// clone returns a clone of the node.
-func (n *Node) clone() *Node {
-	c := &Node{
-		Value:    n.Value,
-		edges:    n.edges,
-		depth:    n.depth + 1,
-		priority: n.priority - 1,
-	}
-
-	if c.Value != nil {
-		c.priority++
-	}
-
-	c.incrDepth()
-
-	return c
+	return nil
 }
 
 func (n *Node) incrDepth() {
+	n.depth++
 	for _, e := range n.edges {
-		e.node.depth++
-
-		e.node.incrDepth()
+		e.n.incrDepth()
 	}
 }
 
 // sort sorts the node and its children recursively.
-func (n *Node) sort(st SortingTechnique) {
-	n.st = st
-
-	sort.Sort(n)
-
+func (n *Node) sort(st SortingTechnique, binary bool) {
+	s := &sorter{
+		n:      n,
+		st:     st,
+		binary: binary,
+	}
+	sort.Sort(s)
 	for _, e := range n.edges {
-		e.node.sort(st)
+		e.n.sort(st, binary)
+	}
+}
+
+func (n *Node) split() *Node {
+	c := *n
+	c.incrDepth()
+	return &c
+}
+
+func (n *Node) writeTo(bd *builder) {
+	for i, e := range n.edges {
+		e.writeTo(bd, []bool{i == len(n.edges)-1})
 	}
 }
