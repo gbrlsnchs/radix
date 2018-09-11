@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 ### Added
 - Concurrency safety when sorting the tree.
+- Support for configuring the tree via bitwise flags.
+- Option to use a binary PATRICIA tree support via `Tbinary` flag.
+
+### Changed
+- Enhance the tree's performance by using a `strings.Builder` for printing.
 
 ## [0.4.5] - 2018-03-02
 ### Fixed
