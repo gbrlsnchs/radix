@@ -27,7 +27,7 @@ type Tree struct {
 	binary      bool
 	placeholder byte
 	delim       byte
-	mtx         *sync.RWMutex
+	mu          *sync.RWMutex
 	bd          *builder
 }
 
@@ -42,7 +42,7 @@ func New(flags int) *Tree {
 		tr.root.edges = make([]*edge, 2) // create two empty edges
 	}
 	if flags&Tsafe > 0 {
-		tr.mtx = &sync.RWMutex{}
+		tr.mu = &sync.RWMutex{}
 		tr.safe = true
 	}
 	tr.bd = &builder{
@@ -68,8 +68,8 @@ func (tr *Tree) Add(label string, v interface{}) {
 		return
 	}
 	if tr.safe {
-		defer tr.mtx.Unlock()
-		tr.mtx.Lock()
+		defer tr.mu.Unlock()
+		tr.mu.Lock()
 	}
 	tnode := tr.root
 	if tr.binary {
@@ -188,8 +188,8 @@ func (tr *Tree) Del(label string) {
 		return
 	}
 	if tr.safe {
-		defer tr.mtx.Unlock()
-		tr.mtx.Lock()
+		defer tr.mu.Unlock()
+		tr.mu.Lock()
 	}
 	tnode := tr.root
 	var edgex int
@@ -259,8 +259,8 @@ func (tr *Tree) Get(label string) (*Node, map[string]string) {
 		return nil, nil
 	}
 	if tr.safe {
-		defer tr.mtx.RUnlock()
-		tr.mtx.RLock()
+		defer tr.mu.RUnlock()
+		tr.mu.RLock()
 	}
 	tnode := tr.root
 	if tr.binary {
@@ -341,8 +341,8 @@ func (tr *Tree) SetBoundaries(placeholder, delim byte) {
 // including the root.
 func (tr *Tree) Size() int {
 	if tr.safe {
-		defer tr.mtx.RUnlock()
-		tr.mtx.RLock()
+		defer tr.mu.RUnlock()
+		tr.mu.RLock()
 	}
 	return tr.size
 }
@@ -351,8 +351,8 @@ func (tr *Tree) Size() int {
 // according to their priority counter.
 func (tr *Tree) Sort(st SortingTechnique) {
 	if tr.safe {
-		defer tr.mtx.Unlock()
-		tr.mtx.Lock()
+		defer tr.mu.Unlock()
+		tr.mu.Lock()
 	}
 	tr.root.sort(st, tr.binary)
 }
@@ -360,8 +360,8 @@ func (tr *Tree) Sort(st SortingTechnique) {
 // String returns a string representation of the tree structure.
 func (tr *Tree) String() string {
 	if tr.safe {
-		defer tr.mtx.RUnlock()
-		tr.mtx.RLock()
+		defer tr.mu.RUnlock()
+		tr.mu.RLock()
 	}
 	tr.bd.Reset()
 	tr.bd.colors[colorBold].Fprint(tr.bd, "\n.")
