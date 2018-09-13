@@ -179,6 +179,15 @@ func (tr *Tree) Add(label string, v interface{}) {
 	}
 }
 
+// Count returns the total numbers of nodes.
+func (tr *Tree) Count() int {
+	if tr.safe {
+		defer tr.mu.RUnlock()
+		tr.mu.RLock()
+	}
+	return tr.count
+}
+
 // Del deletes a node.
 //
 // If a parent node that holds no value ends up holding only one edge
@@ -341,15 +350,6 @@ func (tr *Tree) Len() int {
 func (tr *Tree) SetBoundaries(placeholder, delim byte) {
 	tr.placeholder = placeholder
 	tr.delim = delim
-}
-
-// Count returns the total numbers of nodes.
-func (tr *Tree) Count() int {
-	if tr.safe {
-		defer tr.mu.RUnlock()
-		tr.mu.RLock()
-	}
-	return tr.count
 }
 
 // Sort sorts the tree nodes and its children recursively

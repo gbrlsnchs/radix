@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 - Enhance the tree's performance by using a `strings.Builder` for printing.
+- Alter method `Size` to `Count`, in order to not confuse with byte size.
 
 ## [0.4.5] - 2018-03-02
 ### Fixed
