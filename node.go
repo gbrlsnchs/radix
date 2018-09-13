@@ -30,7 +30,7 @@ func (n *Node) Priority() int {
 	return n.priority
 }
 
-func (n *Node) addBinary(label string, v interface{}) (size, length int) {
+func (n *Node) addBinary(label string, v interface{}) (nn int) {
 	for i := range label {
 		for j := uint8(8); j > 0; j-- {
 			bbit := bit(j, label[i])
@@ -51,13 +51,12 @@ func (n *Node) addBinary(label string, v interface{}) (size, length int) {
 			if done {
 				n.edges[bbit].n.Value = v
 			}
-			size++
-			length++
+			nn++
 		next:
 			n = n.edges[bbit].n
 		}
 	}
-	return
+	return nn
 }
 
 func (n *Node) delBinary(label string) int {

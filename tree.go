@@ -22,7 +22,7 @@ const (
 type Tree struct {
 	root        *Node
 	length      int // total number of nodes
-	size        int // total byte length
+	size        int // total byte size
 	safe        bool
 	binary      bool
 	placeholder byte
@@ -73,9 +73,9 @@ func (tr *Tree) Add(label string, v interface{}) {
 	}
 	tnode := tr.root
 	if tr.binary {
-		length, size := tnode.addBinary(label, v)
-		tr.length += length
-		tr.size += size
+		nn := tnode.addBinary(label, v)
+		tr.length += nn
+		tr.size += nn / 8
 		return
 	}
 	for {
