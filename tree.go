@@ -195,7 +195,12 @@ func (tr *Tree) Del(label string) {
 	if tr.binary {
 		del := tnode.delBinary(label)
 		tr.length--
-		tr.size = (tr.size*8 - del) / 8
+		bits := tr.size*8 - del
+		if bits == 0 {
+			tr.size = 0
+			return
+		}
+		tr.size = (bits / 8) + 1
 		return
 	}
 	var edgex int
