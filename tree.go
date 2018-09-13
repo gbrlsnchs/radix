@@ -21,7 +21,7 @@ const (
 // Tree is a radix tree.
 type Tree struct {
 	root        *Node
-	size        int // number of nodes without the root
+	size        int // total number of nodes
 	length      int // total byte size
 	safe        bool
 	binary      bool
@@ -192,6 +192,12 @@ func (tr *Tree) Del(label string) {
 		tr.mu.Lock()
 	}
 	tnode := tr.root
+	if tr.binary {
+		del := tnode.delBinary(label)
+		tr.size--
+		tr.length = (tr.length*8 - del) / 8
+		return
+	}
 	var edgex int
 	var parent *edge
 	var ptrs []*int

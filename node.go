@@ -18,6 +18,10 @@ func (n *Node) Depth() int {
 
 // IsLeaf returns whether the node is a leaf.
 func (n *Node) IsLeaf() bool {
+	length := len(n.edges)
+	if length == 2 { // check for binary tree
+		return n.edges[0] == nil && n.edges[1] == nil
+	}
 	return len(n.edges) == 0
 }
 
@@ -27,15 +31,9 @@ func (n *Node) Priority() int {
 }
 
 func (n *Node) addBinary(label string, v interface{}) (size, length int) {
-	val := make([]byte, 0)
 	for i := range label {
 		for j := uint8(8); j > 0; j-- {
 			bbit := bit(j, label[i])
-			if bbit == 0 {
-				val = append(val, '0')
-			} else {
-				val = append(val, '1')
-			}
 			done := i == len(label)-1 && j == 1
 			if e := n.edges[bbit]; e != nil {
 				if done {
@@ -62,22 +60,29 @@ func (n *Node) addBinary(label string, v interface{}) (size, length int) {
 	return
 }
 
-func (n *Node) delBinary(label string) (d int) {
+func (n *Node) delBinary(label string) int {
+	var (
+		ref *edge
+		del int
+	)
 	for i := range label {
 		for j := uint8(8); j > 0; j-- {
 			bbit := bit(j, label[i])
 			done := i == len(label)-1 && j == 1
 			if e := n.edges[bbit]; e != nil {
-				d++
-				if done && n.IsLeaf() { // only delete if node is leaf, otherwise it would break the tree
-					n.edges = make([]*edge, 2)
-					return
+				del++
+				if done && e.n.IsLeaf() { // only delete if node is leaf, otherwise it would break the tree
+					ref.n.edges = make([]*edge, 2) // reset edges from the last node that has value
+					return del
 				}
+				ref = e
+				n = e.n
+				continue
 			}
-			return
+			return 0
 		}
 	}
-	return
+	return 0
 }
 
 func (n *Node) getBinary(label string) *Node {
