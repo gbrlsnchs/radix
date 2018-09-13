@@ -21,8 +21,8 @@ const (
 // Tree is a radix tree.
 type Tree struct {
 	root        *Node
-	count       int // total number of nodes
-	length      int // total byte count
+	length      int // total number of nodes
+	size        int // total byte length
 	safe        bool
 	binary      bool
 	placeholder byte
@@ -34,8 +34,8 @@ type Tree struct {
 // New creates a named radix tree with a single node (its root).
 func New(flags int) *Tree {
 	tr := &Tree{
-		root:  &Node{},
-		count: 1,
+		root:   &Node{},
+		length: 1,
 	}
 	if flags&Tbinary > 0 {
 		tr.binary = true
@@ -73,9 +73,9 @@ func (tr *Tree) Add(label string, v interface{}) {
 	}
 	tnode := tr.root
 	if tr.binary {
-		count, length := tnode.addBinary(label, v)
-		tr.count += count
+		length, size := tnode.addBinary(label, v)
 		tr.length += length
+		tr.size += size
 		return
 	}
 	for {
@@ -128,8 +128,8 @@ func (tr *Tree) Add(label string, v interface{}) {
 					},
 				}
 				tnode.Value = v
-				tr.count++
-				tr.length += len(slice)
+				tr.length++
+				tr.size += len(slice)
 				return
 			}
 			// Add a new node but break its parent into prefix and
@@ -159,8 +159,8 @@ func (tr *Tree) Add(label string, v interface{}) {
 				}
 				next.label = next.label[:len(next.label)-len(slice)]
 				tnode.Value = nil
-				tr.count += 2
-				tr.length += len(label)
+				tr.length += 2
+				tr.size += len(label)
 				return
 			}
 			continue
@@ -173,19 +173,10 @@ func (tr *Tree) Add(label string, v interface{}) {
 				priority: 1,
 			},
 		})
-		tr.count++
-		tr.length += len(label)
+		tr.length++
+		tr.size += len(label)
 		return
 	}
-}
-
-// Count returns the total numbers of nodes.
-func (tr *Tree) Count() int {
-	if tr.safe {
-		defer tr.mu.RUnlock()
-		tr.mu.RLock()
-	}
-	return tr.count
 }
 
 // Del deletes a node.
@@ -203,8 +194,8 @@ func (tr *Tree) Del(label string) {
 	tnode := tr.root
 	if tr.binary {
 		del := tnode.delBinary(label)
-		tr.count--
-		tr.length = (tr.length*8 - del) / 8
+		tr.length--
+		tr.size = (tr.size*8 - del) / 8
 		return
 	}
 	var edgex int
@@ -259,9 +250,9 @@ func (tr *Tree) Del(label string) {
 			parent.label += e.label
 			pnode.Value = e.n.Value
 			pnode.edges = e.n.edges
-			tr.count--
+			tr.length--
 		}
-		tr.count--
+		tr.length--
 		if tnode.Value != nil {
 			<-done
 		}
@@ -340,8 +331,13 @@ func (tr *Tree) Get(label string) (*Node, map[string]string) {
 	return tnode, params
 }
 
-// Len returns the total count of all labels stored in the tree.
+// Len returns the total numbers of nodes,
+// including the tree's root.
 func (tr *Tree) Len() int {
+	if tr.safe {
+		defer tr.mu.RUnlock()
+		tr.mu.RLock()
+	}
 	return tr.length
 }
 
@@ -352,8 +348,13 @@ func (tr *Tree) SetBoundaries(placeholder, delim byte) {
 	tr.delim = delim
 }
 
+// Size returns the total byte size stored in the tree.
+func (tr *Tree) Size() int {
+	return tr.size
+}
+
 // Sort sorts the tree nodes and its children recursively
-// according to their priority counter.
+// according to their priority lengther.
 func (tr *Tree) Sort(st SortingTechnique) {
 	if tr.safe {
 		defer tr.mu.Unlock()
@@ -372,8 +373,8 @@ func (tr *Tree) String() string {
 	tr.bd.colors[colorBold].Fprint(tr.bd, "\n.")
 	if tr.bd.debug {
 		mag := tr.bd.colors[colorMagenta]
-		mag.Fprintf(tr.bd, " (%d node", tr.count)
-		if tr.count != 1 {
+		mag.Fprintf(tr.bd, " (%d node", tr.length)
+		if tr.length != 1 {
 			mag.Fprint(tr.bd, "s") // avoid writing "1 nodes"
 		}
 		mag.Fprint(tr.bd, ")")
