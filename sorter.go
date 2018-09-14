@@ -17,9 +17,8 @@ const (
 )
 
 type sorter struct {
-	n      *Node
-	st     SortingTechnique
-	binary bool
+	n  *Node
+	st SortingTechnique
 }
 
 func (s *sorter) Len() int {
@@ -28,21 +27,16 @@ func (s *sorter) Len() int {
 
 func (s *sorter) Less(i, j int) bool {
 	n := s.n
-	if s.st == AscLabelSort {
-		if s.binary {
-			return i < j
-		}
+	switch s.st {
+	case AscLabelSort:
 		return n.edges[i].label < n.edges[j].label
-	}
-	if s.st == DescLabelSort {
-		if s.binary {
-			return i > j
-		}
+	case DescLabelSort:
 		return n.edges[i].label > n.edges[j].label
+	default:
+		return n.edges[i].n != nil &&
+			n.edges[j].n != nil &&
+			n.edges[i].n.priority > n.edges[j].n.priority
 	}
-	return n.edges[i].n != nil &&
-		n.edges[j].n != nil &&
-		n.edges[i].n.priority > n.edges[j].n.priority
 }
 
 func (s *sorter) Swap(i, j int) {

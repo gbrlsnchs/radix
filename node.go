@@ -110,15 +110,14 @@ func (n *Node) incrDepth() {
 }
 
 // sort sorts the node and its children recursively.
-func (n *Node) sort(st SortingTechnique, binary bool) {
+func (n *Node) sort(st SortingTechnique) {
 	s := &sorter{
-		n:      n,
-		st:     st,
-		binary: binary,
+		n:  n,
+		st: st,
 	}
 	sort.Sort(s)
 	for _, e := range n.edges {
-		e.n.sort(st, binary)
+		e.n.sort(st)
 	}
 }
 

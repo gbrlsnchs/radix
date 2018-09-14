@@ -361,11 +361,13 @@ func (tr *Tree) Size() int {
 // Sort sorts the tree nodes and its children recursively
 // according to their priority lengther.
 func (tr *Tree) Sort(st SortingTechnique) {
-	if tr.safe {
-		defer tr.mu.Unlock()
-		tr.mu.Lock()
+	if !tr.binary {
+		if tr.safe {
+			defer tr.mu.Unlock()
+			tr.mu.Lock()
+		}
+		tr.root.sort(st)
 	}
-	tr.root.sort(st, tr.binary)
 }
 
 // String returns a string representation of the tree structure.
