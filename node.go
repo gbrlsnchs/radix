@@ -59,6 +59,12 @@ func (n *Node) addBinary(label string, v interface{}) (nn int) {
 	return nn
 }
 
+func (n *Node) clone() *Node {
+	c := *n
+	c.incrDepth()
+	return &c
+}
+
 func (n *Node) delBinary(label string) int {
 	var (
 		ref *edge
@@ -119,12 +125,6 @@ func (n *Node) sort(st SortingTechnique) {
 	for _, e := range n.edges {
 		e.n.sort(st)
 	}
-}
-
-func (n *Node) split() *Node {
-	c := *n
-	c.incrDepth()
-	return &c
 }
 
 func (n *Node) writeTo(bd *builder) {
