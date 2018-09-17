@@ -12,7 +12,7 @@ const (
 	Tsafe = 1 << iota
 	// Tdebug adds more information to the tree's string representation.
 	Tdebug
-	// Tbinary uses a binary PATRICIA tree instead of a prefix Radix tree.
+	// Tbinary uses a binary PATRICIA tree instead of a prefix tree.
 	Tbinary
 	// Tnocolor disables colorful output.
 	Tnocolor
@@ -121,15 +121,16 @@ func (tr *Tree) Add(label string, v interface{}) {
 				// 	then add "tom"
 				// 	(root) -> ("tom", v2) -> ("ato", v1)
 				next.label = next.label[:len(next.label)-len(slice)]
+				c := tnode.clone()
+				c.priority--
 				tnode.edges = []*edge{
 					&edge{
 						label: slice,
-						n:     tnode.split(),
+						n:     c,
 					},
 				}
 				tnode.Value = v
 				tr.length++
-				tr.size += len(slice)
 				return
 			}
 			// Add a new node but break its parent into prefix and
@@ -141,10 +142,10 @@ func (tr *Tree) Add(label string, v interface{}) {
 			// 	(root) -> ("to", nil) -> ("mato", v1)
 			// 	                      +> ("rnado", v2)
 			if len(slice) > 0 {
-				c := tnode.split()
+				c := tnode.clone()
 				c.priority--
 				tnode.edges = []*edge{
-					&edge{ // the suffix that is split into a new node
+					&edge{ // the suffix that is clone into a new node
 						label: slice,
 						n:     c,
 					},
