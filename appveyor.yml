@@ -1,0 +1,22 @@
+version: '{build}.{branch}'
+shallow_clone: true
+clone_folder: 'c:\test'
+environment:
+  GOPATH: 'c:\gopath'
+  PATH: 'c:\msys64\mingw64\bin\;%PATH%'
+build: false
+deploy: false
+test_script:
+  - 'gcc --version'
+  - 'mkdir %GOPATH%'
+  # Go 1.10
+  - 'cd %GOPATH%'
+  - 'set GOROOT=c:\go110'
+  - 'c:\go110\bin\go.exe get -u golang.org/x/vgo'
+  - 'cd c:\test'
+  - '%GOPATH%\bin\vgo.exe test -ldflags="-linkmode=external" -v -race -count=10 ./...'
+  # Go 1.11
+  - 'cd %GOPATH%'
+  - 'set GOROOT=c:\go111'
+  - 'cd c:\test'
+  - '%GOROOT%\bin\go.exe test -ldflags="-linkmode=external" -v -race -count=10 ./...'

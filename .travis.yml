@@ -1,11 +1,18 @@
 language: go
 os:
-  - linux
-  - osx
+  - 'linux'
+  - 'osx'
 sudo: false
 go:
-  - "1.10"
-  - "1.11"
-  - "tip"
-install: "go get -u golang.org/x/vgo"
-script: "vgo test -v ./..."
+  - '1.10'
+  - '1.11'
+  - 'tip'
+install:
+  - 'cd ${TRAVIS_HOME}/gopath'
+  - 'export GOVERSION=$(go version | awk ''{print $3}'')'
+  - 'echo $GOVERSION'
+  - 'if [ "$GOVERSION" == "go1.10" ]; then go get -u golang.org/x/vgo; fi'
+  - 'mkdir $HOME/test'
+  - 'rsync -az ${TRAVIS_BUILD_DIR}/ $HOME/test/'
+  - 'cd $HOME/test'
+script: 'if [ "$GOVERSION" == "go1.10" ]; then vgo test -v -race -count=10; else go test -v -race -count=10; fi'
