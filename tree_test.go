@@ -14,12 +14,10 @@ type testWrapper struct {
 	value    interface{}
 }
 
-type testValues []*testWrapper
-
-func TestPrefixTree(t *testing.T) {
+func TestTree(t *testing.T) {
 	testCases := []struct {
 		labels      []string
-		values      testValues
+		wrappers    []testWrapper
 		length      int
 		size        int
 		params      map[string]string
@@ -28,43 +26,87 @@ func TestPrefixTree(t *testing.T) {
 	}{
 		{
 			labels: []string{"foobar"},
-			values: testValues{&testWrapper{"foobar", 1, 1, "bazqux"}},
+			wrappers: []testWrapper{
+				{label: "foobar", priority: 1, depth: 1, value: "bazqux"},
+			},
 			length: 2,
 			size:   len("bazqux"),
 		},
 		{
+			labels: []string{"a", "b"},
+			wrappers: []testWrapper{
+				{label: "a", priority: 1, depth: 1, value: 1},
+				{label: "b", priority: 1, depth: 1, value: 2},
+			},
+			length: 3,
+			size:   len("a") + len("b"),
+		},
+		{
 			labels: []string{"a", "ab", "abc"},
-			values: testValues{&testWrapper{"a", 3, 1, 1}, &testWrapper{"ab", 2, 2, 2}, &testWrapper{"abc", 1, 3, 3}},
+			wrappers: []testWrapper{
+				{label: "a", priority: 3, depth: 1, value: 1},
+				{label: "ab", priority: 2, depth: 2, value: 2},
+				{label: "abc", priority: 1, depth: 3, value: 3},
+			},
 			length: 4,
 			size:   len("abc"),
 		},
 		{
+			labels: []string{"a", "ab", "abc", "d"},
+			wrappers: []testWrapper{
+				{label: "a", priority: 3, depth: 1, value: 1},
+				{label: "ab", priority: 2, depth: 2, value: 2},
+				{label: "abc", priority: 1, depth: 3, value: 3},
+				{label: "d", priority: 1, depth: 1, value: 4},
+			},
+			length: 5,
+			size:   len("abc") + len("d"),
+		},
+		{
 			labels: []string{"ab", "a", "abc"},
-			values: testValues{&testWrapper{"ab", 2, 2, 2}, &testWrapper{"a", 3, 1, 1}, &testWrapper{"abc", 1, 3, 3}},
+			wrappers: []testWrapper{
+				{label: "ab", priority: 2, depth: 2, value: 2},
+				{label: "a", priority: 3, depth: 1, value: 1},
+				{label: "abc", priority: 1, depth: 3, value: 3},
+			},
 			length: 4,
 			size:   len("abc"),
 		},
 		{
 			labels: []string{"ab", "abc", "a"},
-			values: testValues{&testWrapper{"ab", 2, 2, 2}, &testWrapper{"abc", 1, 3, 3}, &testWrapper{"a", 3, 1, 1}},
+			wrappers: []testWrapper{
+				{label: "ab", priority: 2, depth: 2, value: 2},
+				{label: "abc", priority: 1, depth: 3, value: 3},
+				{label: "a", priority: 3, depth: 1, value: 1},
+			},
 			length: 4,
 			size:   len("abc"),
 		},
 		{
 			labels: []string{"abc", "a", "ab"},
-			values: testValues{&testWrapper{"abc", 1, 3, 3}, &testWrapper{"a", 3, 1, 1}, &testWrapper{"ab", 2, 2, 2}},
+			wrappers: []testWrapper{
+				{label: "abc", priority: 1, depth: 3, value: 3},
+				{label: "a", priority: 3, depth: 1, value: 1},
+				{label: "ab", priority: 2, depth: 2, value: 2},
+			},
 			length: 4,
 			size:   len("abc"),
 		},
 		{
 			labels: []string{"a", "b", "c"},
-			values: testValues{&testWrapper{"a", 1, 1, 1}, &testWrapper{"b", 1, 1, 2}, &testWrapper{"c", 1, 1, 3}},
+			wrappers: []testWrapper{
+				{label: "a", priority: 1, depth: 1, value: 1},
+				{label: "b", priority: 1, depth: 1, value: 2},
+				{label: "c", priority: 1, depth: 1, value: 3},
+			},
 			length: 4,
 			size:   len("a") + len("b") + len("c"),
 		},
 		{
-			labels:      []string{"/path/123"},
-			values:      testValues{&testWrapper{"/path/@id", 1, 1, "foobar"}},
+			labels: []string{"/path/123"},
+			wrappers: []testWrapper{
+				{label: "/path/@id", priority: 1, depth: 1, value: "foobar"},
+			},
 			length:      2,
 			size:        len("/path/@id"),
 			params:      map[string]string{"id": "123"},
@@ -72,8 +114,10 @@ func TestPrefixTree(t *testing.T) {
 			delim:       '/',
 		},
 		{
-			labels:      []string{"/path/123/subpath/456"},
-			values:      testValues{&testWrapper{"/path/@id/subpath/@id2", 1, 1, "foobar"}},
+			labels: []string{"/path/123/subpath/456"},
+			wrappers: []testWrapper{
+				{label: "/path/@id/subpath/@id2", priority: 1, depth: 1, value: "foobar"},
+			},
 			length:      2,
 			size:        len("/path/@id/subpath/@id2"),
 			params:      map[string]string{"id": "123", "id2": "456"},
@@ -81,8 +125,16 @@ func TestPrefixTree(t *testing.T) {
 			delim:       '/',
 		},
 		{
-			labels:      []string{"/path/123", "/path/123/subpath/456"},
-			values:      testValues{&testWrapper{"/path/@id", 2, 1, "foobar"}, &testWrapper{"/path/@id/subpath/@id2", 1, 2, "foobar"}},
+			labels: []string{"/path/123", "/path/123/subpath/456"},
+			wrappers: []testWrapper{
+				{label: "/path/@id", priority: 2, depth: 1, value: "foobar"},
+				testWrapper{
+					label:    "/path/@id/subpath/@id2",
+					priority: 1,
+					depth:    2,
+					value:    "bazqux",
+				},
+			},
 			length:      3,
 			size:        len("/path/@id/subpath/@id2"),
 			params:      map[string]string{"id": "123", "id2": "456"},
@@ -96,8 +148,8 @@ func TestPrefixTree(t *testing.T) {
 			if tc.placeholder > 0 && tc.delim > 0 {
 				tr.SetBoundaries(tc.placeholder, tc.delim)
 			}
-			for _, v := range tc.values {
-				tr.Add(v.label, v.value)
+			for _, w := range tc.wrappers {
+				tr.Add(w.label, w.value)
 			}
 			t.Log(tr.String())
 
@@ -111,18 +163,15 @@ func TestPrefixTree(t *testing.T) {
 				n *Node
 				p map[string]string
 			)
-			for i, v := range tc.values {
+			for i, w := range tc.wrappers {
 				n, p = tr.Get(tc.labels[i])
-				if want, got := true, n != nil; want != got {
-					t.Fatalf("want %t, got %t", want, got)
-				}
-				if want, got := v.value, n.Value; !reflect.DeepEqual(want, got) {
+				if want, got := w.value, n.Value; !reflect.DeepEqual(want, got) {
 					t.Errorf("want %v, got %v", want, got)
 				}
-				if want, got := v.priority, n.Priority(); want != got {
+				if want, got := w.priority, n.Priority(); want != got {
 					t.Errorf("want %d, got %d", want, got)
 				}
-				if want, got := v.depth, n.Depth(); want != got {
+				if want, got := w.depth, n.Depth(); want != got {
 					t.Errorf("want %d, got %d", want, got)
 				}
 			}
@@ -130,11 +179,59 @@ func TestPrefixTree(t *testing.T) {
 				t.Errorf("want %v, got %v", want, got)
 			}
 
-			for i, v := range tc.values {
-				tr.Del(v.label)
+			for i, w := range tc.wrappers {
+				tr.Del(w.label)
 				n, _ = tr.Get(tc.labels[i])
 				if want, got := (*Node)(nil), n; want != got {
 					t.Errorf("want %v, got %v", want, got)
+				}
+			}
+		})
+	}
+}
+
+func TestBinaryTree(t *testing.T) {
+	testCases := []struct {
+		labels []string
+		values []interface{}
+	}{
+		{
+			labels: []string{"foobar"},
+			values: []interface{}{"bazqux"},
+		},
+		{
+			labels: []string{"foo", "bar"},
+			values: []interface{}{"baz", "qux"},
+		},
+		{
+			labels: []string{"abc", "d"},
+			values: []interface{}{"foo", "bar"},
+		},
+		{
+			labels: []string{"a", "abc", "d"},
+			values: []interface{}{"foo", "bar", "baz"},
+		},
+		{
+			labels: []string{"foo", "bar", "baz", "qux"},
+			values: []interface{}{1, 12, 123, 1234},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run("", func(t *testing.T) {
+			tr := New(Tdebug | Tbinary)
+			for i, v := range tc.values {
+				tr.Add(tc.labels[i], v)
+			}
+			t.Log(tr.String())
+
+			for i, v := range tc.values {
+				label := tc.labels[i]
+				n, _ := tr.Get(label)
+				if want, got := v, n.Value; !reflect.DeepEqual(want, got) {
+					t.Errorf("want %v, got %v", want, got)
+				}
+				if want, got := len(label)*8, n.Depth(); want != got {
+					t.Errorf("want %d, got %d", want, got)
 				}
 			}
 		})
