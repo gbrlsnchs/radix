@@ -215,6 +215,17 @@ func TestBinaryTree(t *testing.T) {
 			labels: []string{"foo", "bar", "baz", "qux"},
 			values: []interface{}{1, 12, 123, 1234},
 		},
+		{
+			labels: []string{
+				"deck",
+				"did",
+				"doe",
+				"dog",
+				"doge",
+				"dogs",
+			},
+			values: []interface{}{1, 2, 3, 4, 5, 6},
+		},
 	}
 	for _, tc := range testCases {
 		t.Run("", func(t *testing.T) {
