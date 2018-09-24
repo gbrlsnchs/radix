@@ -1,6 +1,7 @@
 package radix
 
 import (
+	"bytes"
 	"strings"
 	"sync"
 
@@ -388,8 +389,9 @@ func (tr *Tree) String() string {
 		mag.Fprint(tr.bd, ")")
 	}
 	tr.bd.WriteByte('\n')
-	if !tr.binary {
-		// TODO: implement binary string representation
+	if tr.binary {
+		tr.root.writeToBinary(tr.bd, &bytes.Buffer{}, &bytes.Buffer{})
+	} else {
 		tr.root.writeTo(tr.bd)
 	}
 	return tr.bd.String()

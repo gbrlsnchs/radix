@@ -1,10 +1,12 @@
 package radix
 
-import "sort"
+import (
+	"bytes"
+	"sort"
+)
 
 // Node is a node of a radix tree.
 type Node struct {
-	// Value is a value of any type held by a node.
 	Value    interface{}
 	edges    []*edge
 	priority int
@@ -22,7 +24,7 @@ func (n *Node) IsLeaf() bool {
 	if length == 2 { // check for binary tree
 		return n.edges[0] == nil && n.edges[1] == nil
 	}
-	return len(n.edges) == 0
+	return length == 0
 }
 
 // Priority returns the node's priority.
@@ -130,5 +132,38 @@ func (n *Node) sort(st SortingTechnique) {
 func (n *Node) writeTo(bd *builder) {
 	for i, e := range n.edges {
 		e.writeTo(bd, []bool{i == len(n.edges)-1})
+	}
+}
+
+func (n *Node) writeToBinary(bd *builder, buf, aux *bytes.Buffer) {
+	prefix := aux.Bytes()
+	length := len(prefix)
+	aux1, aux2 := make([]byte, length), make([]byte, length)
+	copy(aux1, prefix)
+	copy(aux2, prefix)
+	auxs := []*bytes.Buffer{
+		bytes.NewBuffer(aux1),
+		bytes.NewBuffer(aux2),
+	}
+	for i, e := range n.edges {
+		if e != nil {
+			bit := byte('0')
+			if i == 1 {
+				bit = '1'
+			}
+			auxs[i].WriteByte(bit)
+			if e.n != nil {
+				if e.n.Value != nil {
+					bd.Write(prefix)
+					bd.WriteByte(bit) // holds only one value
+					isLeaf := e.n.IsLeaf()
+					if isLeaf {
+						bd.colors[colorGreen].Fprint(bd, " 🍂")
+					}
+					bd.colors[colorMagenta].Fprintf(bd, " → %#v\n", e.n.Value)
+				}
+				e.n.writeToBinary(bd, buf, auxs[i])
+			}
+		}
 	}
 }
