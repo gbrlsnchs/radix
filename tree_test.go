@@ -141,11 +141,22 @@ func TestTree(t *testing.T) {
 			placeholder: '@',
 			delim:       '/',
 		},
+		{
+			labels: []string{"/api/user/123"},
+			wrappers: []testWrapper{
+				{label: "/api/user/@id", priority: 1, depth: 1, value: "foobar"},
+			},
+			length:      2,
+			size:        len("/api/user/@id"),
+			params:      map[string]string{"id": "123"},
+			placeholder: '@',
+			delim:       '/',
+		},
 	}
 	for _, tc := range testCases {
 		t.Run("", func(t *testing.T) {
 			tr := New(Tdebug)
-			if tc.placeholder > 0 && tc.delim > 0 {
+			if tc.placeholder != 0 && tc.delim != 0 {
 				tr.SetBoundaries(tc.placeholder, tc.delim)
 			}
 			for _, w := range tc.wrappers {
