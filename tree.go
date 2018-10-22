@@ -5,7 +5,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/fatih/color"
+	"github.com/gbrlsnchs/color"
 )
 
 const (
@@ -50,14 +50,12 @@ func New(flags int) *Tree {
 		Builder: &strings.Builder{},
 		debug:   flags&Tdebug > 0,
 	}
-	tr.bd.colors[colorRed] = color.New(color.FgRed)
-	tr.bd.colors[colorGreen] = color.New(color.FgGreen)
-	tr.bd.colors[colorMagenta] = color.New(color.FgMagenta)
-	tr.bd.colors[colorBold] = color.New(color.Bold)
+	tr.bd.colors[colorRed] = color.New(color.CodeFgRed)
+	tr.bd.colors[colorGreen] = color.New(color.CodeFgGreen)
+	tr.bd.colors[colorMagenta] = color.New(color.CodeFgMagenta)
+	tr.bd.colors[colorBold] = color.New(color.CodeBold)
 	for _, c := range tr.bd.colors {
-		if flags&Tnocolor > 0 {
-			c.DisableColor()
-		}
+		c.SetDisabled(flags&Tnocolor > 0)
 	}
 	return tr
 }
@@ -378,15 +376,16 @@ func (tr *Tree) String() string {
 		defer tr.mu.RUnlock()
 		tr.mu.RLock()
 	}
-	tr.bd.Reset()
-	tr.bd.colors[colorBold].Fprint(tr.bd, "\n.")
+	bd := tr.bd
+	bd.Reset()
+	bd.WriteString(bd.colors[colorBold].Wrap("\n."))
 	if tr.bd.debug {
-		mag := tr.bd.colors[colorMagenta]
-		mag.Fprintf(tr.bd, " (%d node", tr.length)
+		mag := bd.colors[colorMagenta]
+		bd.WriteString(mag.Wrapf(" (%d node", tr.length))
 		if tr.length != 1 {
-			mag.Fprint(tr.bd, "s") // avoid writing "1 nodes"
+			bd.WriteString(mag.Wrap("s")) // avoid writing "1 nodes"
 		}
-		mag.Fprint(tr.bd, ")")
+		bd.WriteString(mag.Wrap(")"))
 	}
 	tr.bd.WriteByte('\n')
 	if tr.binary {

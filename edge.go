@@ -27,14 +27,14 @@ func (e *edge) writeTo(bd *builder, tabList []bool) {
 	}
 	bd.WriteString("── ")
 	if bd.debug {
-		bd.colors[colorRed].Fprintf(bd, "%d↑ ", e.n.priority)
+		bd.WriteString(bd.colors[colorRed].Wrapf("%d↑ ", e.n.priority))
 	}
-	bd.colors[colorBold].Fprintf(bd, "%s", e.label)
+	bd.WriteString(bd.colors[colorBold].Wrap(e.label))
 	if bd.debug {
 		if e.n.IsLeaf() {
-			bd.colors[colorGreen].Fprint(bd, " 🍂")
+			bd.WriteString(bd.colors[colorGreen].Wrap(" 🍂"))
 		}
-		bd.colors[colorMagenta].Fprintf(bd, " → %#v", e.n.Value)
+		bd.WriteString(bd.colors[colorMagenta].Wrapf(" → %#v", e.n.Value))
 	}
 	bd.WriteByte('\n')
 	for i, next := range e.n.edges {

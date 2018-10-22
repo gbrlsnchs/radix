@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Support for configuring the tree via bitwise flags.
 - Option to use a binary PATRICIA tree support via `Tbinary` flag.
 - Binary tree string representation.
+- Change ANSI escape coloring dependency.
 
 ### Changed
 - Enhance the tree's performance by using a `strings.Builder` for printing.

@@ -158,9 +158,9 @@ func (n *Node) writeToBinary(bd *builder, buf, aux *bytes.Buffer) {
 					bd.WriteByte(bit) // holds only one value
 					isLeaf := e.n.IsLeaf()
 					if isLeaf {
-						bd.colors[colorGreen].Fprint(bd, " 🍂")
+						bd.WriteString(bd.colors[colorGreen].Wrap(" 🍂"))
 					}
-					bd.colors[colorMagenta].Fprintf(bd, " → %#v\n", e.n.Value)
+					bd.WriteString(bd.colors[colorMagenta].Wrapf(" → %#v\n", e.n.Value))
 				}
 				e.n.writeToBinary(bd, buf, auxs[i])
 			}

@@ -3,11 +3,11 @@ package radix
 import (
 	"strings"
 
-	"github.com/fatih/color"
+	"github.com/gbrlsnchs/color"
 )
 
 type builder struct {
 	*strings.Builder
-	colors [4]*color.Color
+	colors [4]color.Color
 	debug  bool
 }
