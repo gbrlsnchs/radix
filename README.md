@@ -41,7 +41,7 @@ tr.Add("ruber", 5)
 tr.Add("rubicon", 6)
 tr.Add("rubicundus", 7)
 tr.Sort(radix.PrioritySort) // optional step
-log.Print(tr.String())
+fmt.Println(tr)
 ```
 
 #### The code above will print this
@@ -65,7 +65,7 @@ log.Print(tr.String())
 ### Retrieving a value from the tree
 ```go
 n, _ := tr.Get("rubicon") // zero-allocation search
-log.Print(n.Value)        // prints "6"
+fmt.Println(n.Value)      // prints "6"
 ```
 
 ### Building a dynamic tree
@@ -84,16 +84,16 @@ var (
 	p map[string]string
 )
 n, p = tr.Get("/dynamic/path/123")
-log.Print(n.Value) // prints "1"
-log.Print(p["id"]) // prints "123"
+fmt.Println(n.Value) // prints "1"
+fmt.Println(p["id"]) // prints "123"
 
 n, p = tr.Get("/dynamic/path/456/subpath/foobar")
-log.Print(n.Value)   // prints "2"
-log.Print(p["id"])   // prints "456"
-log.Print(p["name"]) // prints "foobar"
+fmt.Println(n.Value)   // prints "2"
+fmt.Println(p["id"])   // prints "456"
+fmt.Println(p["name"]) // prints "foobar"
 
 n, _ = tr.Get("/static/path") // p would be nil
-log.Print(n.Value)            // prints "3"
+fmt.Println(n.Value)          // prints "3"
 ```
 
 ### Building a binary tree
