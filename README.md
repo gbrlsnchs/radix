@@ -1,10 +1,9 @@
 # radix (Radix tree implementation in Go)
 
-[![Build status](https://travis-ci.org/gbrlsnchs/radix.svg?branch=master)](https://travis-ci.org/gbrlsnchs/radix)
-[![Build status](https://ci.appveyor.com/api/projects/status/0eyx2cdvefhx0xo5/branch/master?svg=true)](https://ci.appveyor.com/project/gbrlsnchs/radix/branch/master)
+[![Build Status](https://travis-ci.org/gbrlsnchs/radix.svg?branch=master)](https://travis-ci.org/gbrlsnchs/radix)
 [![Sourcegraph](https://sourcegraph.com/github.com/gbrlsnchs/radix/-/badge.svg)](https://sourcegraph.com/github.com/gbrlsnchs/radix?badge)
 [![GoDoc](https://godoc.org/github.com/gbrlsnchs/radix?status.svg)](https://godoc.org/github.com/gbrlsnchs/radix)
-[![Minimal version](https://img.shields.io/badge/minimal%20version-go1.10%2B-5272b4.svg)](https://golang.org/doc/go1.10)
+[![Minimal Version](https://img.shields.io/badge/minimal%20version-go1.10%2B-5272b4.svg)](https://golang.org/doc/go1.10)
 
 ## About
 This package is an implementation of a [radix tree](https://en.wikipedia.org/wiki/Radix_tree) in [Go](https://golang.org) (or Golang).  
