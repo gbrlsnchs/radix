@@ -280,7 +280,7 @@ func (tr *Tree) Get(label string) (*Node, map[string]string) {
 	var params map[string]string
 	for tnode != nil && label != "" {
 		var next *edge
-	walk:
+	Walk:
 		for _, edge := range tnode.edges {
 			slice := edge.label
 			for {
@@ -294,7 +294,7 @@ func (tr *Tree) Get(label string) (*Node, map[string]string) {
 				// If "slice" (until placeholder) is not prefix of
 				// "label", then keep walking.
 				if !strings.HasPrefix(label, prefix) {
-					continue walk
+					continue Walk
 				}
 				label = label[len(prefix):]
 				// If "slice" is the whole label,
@@ -302,7 +302,7 @@ func (tr *Tree) Get(label string) (*Node, map[string]string) {
 				// is ready to go to the next edge.
 				if len(prefix) == len(slice) {
 					next = edge
-					break walk
+					break Walk
 				}
 				// Check whether there is a delimiter.
 				// If there isn'tr, then use the whole world as parameter.
@@ -323,7 +323,7 @@ func (tr *Tree) Get(label string) (*Node, map[string]string) {
 				label = label[delimIndex:]
 				if slice == "" && label == "" {
 					next = edge
-					break walk
+					break Walk
 				}
 			}
 		}
